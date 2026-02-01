@@ -168,16 +168,21 @@
                     </div>
                     
                     <div class="buttons">
-                        <button id="printSingleBtn" class="btn btn-print" disabled>
-                            <i class="fas fa-print"></i> Imprimir Etiqueta
-                        </button>
-                        <button id="createWebPageBtn" class="btn btn-drive" disabled>
-                            <i class="fab fa-google-drive"></i> Crear Página Web
-                        </button>
-                        <button id="saveBtn" class="btn" disabled>
-                            <i class="fas fa-save"></i> Guardar
-                        </button>
-                    </div>
+    <button id="printSingleBtn" class="btn btn-print" disabled title="Imprimir en hoja A4">
+        <i class="fas fa-file-pdf"></i> Imprimir A4
+    </button>
+    
+    <button id="printThermalBtn" class="btn btn-print" disabled style="background-color: #e67e22;" title="Imprimir Etiqueta Térmica 10x15">
+        <i class="fas fa-print"></i> Imprimir Térmica (10x15)
+    </button>
+
+    <button id="createWebPageBtn" class="btn btn-drive" disabled>
+        <i class="fab fa-google-drive"></i> Crear Página Web
+    </button>
+    <button id="saveBtn" class="btn" disabled>
+        <i class="fas fa-save"></i> Guardar
+    </button>
+</div>
                     
                     <div style="margin-top: 15px; text-align: center; color: #666; font-size: 0.9rem;">
                         <i class="fas fa-qrcode"></i> El QR contiene la información de la etiqueta y enlace a la página web
