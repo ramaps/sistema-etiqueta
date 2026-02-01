@@ -1,5 +1,5 @@
-// google-drive-simple.js - SIN QR EN LA WEB
-const GOOGLE_DRIVE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwxnOAdFQhIzQqHcj5SJ2YZv54miHzHpas0NoUVoE-QgGHhgTgSSIG3VeKQh8LMSeq9/exec";
+// google-drive-simple.js - VERSIÓN ACTUALIZADA CON SOLICITANTE
+const GOOGLE_DRIVE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxE9aDhPs99lqTQ7z1_bRub-UOVZI3ITJ0te3ekKMhzEtrSuUa1p_kjH4u3GthGRNFZ/exec";
 
 async function createWebPage() {
     if (!window.currentLabelData) {
@@ -10,26 +10,31 @@ async function createWebPage() {
     const loading = showLoading('Generando página de consulta...');
     
     try {
+        // Armamos el paquete de datos incluyendo al SOLICITANTE
         const payload = {
             action: "createWebPage",
             ordenNumero: window.currentLabelData.ordenNumero,
             codigo: window.currentLabelData.codigo,
             destino: window.currentLabelData.destino,
+            solicitante: window.currentLabelData.solicitante || "No especificado", // <-- AGREGADO
             totalBolsas: window.currentLabelData.cantidadTotal,
             verificationCode: window.currentLabelData.verificationCode,
             htmlContent: generateWebPageHTML() 
         };
 
+        // Enviar datos al script de Google
         await fetch(GOOGLE_DRIVE_WEB_APP_URL, {
             method: 'POST',
             mode: 'no-cors', 
             body: JSON.stringify(payload)
         });
 
+        // Generamos el link de visualización
         const viewLink = `${GOOGLE_DRIVE_WEB_APP_URL}?v=${window.currentLabelData.verificationCode}`;
         window.currentWebPageUrl = viewLink;
         window.currentLabelData.driveLink = viewLink;
 
+        // Actualizamos el QR físico para que apunte a la nueva web
         if (typeof window.generateQRCode === 'function') {
             await window.generateQRCode(
                 window.currentLabelData.ordenNumero, 
@@ -39,10 +44,11 @@ async function createWebPage() {
         }
 
         hideLoading(loading);
-        alert('✅ VINCULACIÓN EXITOSA\n\nEl QR físico ahora apunta a la web de consulta.');
+        alert('✅ VINCULACIÓN EXITOSA\n\nEl QR físico ahora incluye al Solicitante y apunta a la web de consulta.');
 
     } catch (error) {
         hideLoading(loading);
+        console.error("Error en createWebPage:", error);
         alert('❌ Error: ' + error.message);
     }
 }
