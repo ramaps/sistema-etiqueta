@@ -1,4 +1,4 @@
-// google-drive-simple.js - VERSIÓN ACTUALIZADA CON SOLICITANTE
+// google-drive-simple.js - VERSIÓN CORREGIDA
 const GOOGLE_DRIVE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxE9aDhPs99lqTQ7z1_bRub-UOVZI3ITJ0te3ekKMhzEtrSuUa1p_kjH4u3GthGRNFZ/exec";
 
 async function createWebPage() {
@@ -10,13 +10,14 @@ async function createWebPage() {
     const loading = showLoading('Generando página de consulta...');
     
     try {
-        // Armamos el paquete de datos incluyendo al SOLICITANTE
+        // Armamos el paquete de datos
         const payload = {
             action: "createWebPage",
+            // Forzamos el nombre de la empresa en mayúsculas para el backend si es necesario
+            empresa: "AGROQUIMICOS DEL NORTE S.A.",
             ordenNumero: window.currentLabelData.ordenNumero,
             codigo: window.currentLabelData.codigo,
             destino: window.currentLabelData.destino,
-            solicitante: window.currentLabelData.solicitante || "No especificado", // <-- AGREGADO
             totalBolsas: window.currentLabelData.cantidadTotal,
             verificationCode: window.currentLabelData.verificationCode,
             htmlContent: generateWebPageHTML() 
@@ -44,7 +45,7 @@ async function createWebPage() {
         }
 
         hideLoading(loading);
-        alert('✅ VINCULACIÓN EXITOSA\n\nEl QR físico ahora incluye al Solicitante y apunta a la web de consulta.');
+        alert('✅ VINCULACIÓN EXITOSA\n\nEl QR ahora apunta a la web de AGROQUIMICOS DEL NORTE S.A.');
 
     } catch (error) {
         hideLoading(loading);
@@ -53,17 +54,40 @@ async function createWebPage() {
     }
 }
 
+/**
+ * Genera el cuerpo de la tabla para la web
+ * Se corrigió: Nombre en mayúsculas y agregado de Solicitante (SOL.)
+ */
 function generateWebPageHTML() {
     if (!window.currentLabelData || !window.currentLabelData.materiales) return '';
-    let html = '';
+    
+    // Encabezado con el nombre de la empresa corregido
+    let html = `
+        <tr>
+            <td colspan="2" style="background-color: #2c3e50; color: white; text-align: center; padding: 15px; font-weight: bold; font-size: 1.2rem;">
+                AGROQUIMICOS DEL NORTE S.A.
+            </td>
+        </tr>
+    `;
+
     window.currentLabelData.materiales.forEach(item => {
         html += `
         <tr>
-            <td>
-                <strong>${item.descripcion}</strong>
-                <span class="sku-lote">SKU: ${item.sku} | Lote: ${item.lote}</span>
+            <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                <div style="font-weight: bold; font-size: 1.1rem; color: #2c3e50; margin-bottom: 4px;">
+                    ${item.descripcion.toUpperCase()}
+                </div>
+                <div style="font-size: 0.85rem; color: #666; display: flex; flex-wrap: wrap; gap: 8px;">
+                    <span style="background: #f0f2f5; padding: 2px 6px; border-radius: 4px;">SKU: ${item.sku}</span>
+                    <span style="background: #f0f2f5; padding: 2px 6px; border-radius: 4px;">LOTE: ${item.lote}</span>
+                    <span style="background: #e3f2fd; color: #1565c0; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #bbdefb;">
+                        SOL.: ${item.solicitante || 'NO ESPECIFICADO'}
+                    </span>
+                </div>
             </td>
-            <td class="cant-cell">${parseFloat(item.cantidad).toFixed(1)} BLS</td>
+            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold; color: #2c3e50; white-space: nowrap;">
+                ${parseFloat(item.cantidad).toFixed(1)} BLS
+            </td>
         </tr>`;
     });
     return html;
