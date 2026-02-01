@@ -1,6 +1,6 @@
 // google-drive-simple.js - SUBIR PÁGINAS WEB A GOOGLE DRIVE (VERSIÓN CORREGIDA)
 
-const GOOGLE_DRIVE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwLd6dBX8OPpe7iZPo0mnEtol_ANtaFe8sM5dwl2udrIarkXMMwSFbNYrjlpAAQAKw/exec";
+const GOOGLE_DRIVE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwEcYcKJ1c7l6YJM90XJ1Nfkqeo0whIbNZyJ0NdRod4k65LBbGuuOI0854nWdDpHfE/exec";
 
 // Función principal para crear página web - VERSIÓN MEJORADA
 async function createWebPage() {

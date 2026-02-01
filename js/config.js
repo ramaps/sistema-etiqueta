@@ -5,7 +5,7 @@ window.qrImageUrl = null;
 window.currentWebPageUrl = null;  // URL de la página web en Drive
 
 // URL DE GOOGLE APPS SCRIPT
-window.googleDriveWebAppUrl = "https://script.google.com/macros/s/AKfycbwLd6dBX8OPpe7iZPo0mnEtol_ANtaFe8sM5dwl2udrIarkXMMwSFbNYrjlpAAQAKw/exec";
+window.googleDriveWebAppUrl = "https://script.google.com/macros/s/AKfycbwEcYcKJ1c7l6YJM90XJ1Nfkqeo0whIbNZyJ0NdRod4k65LBbGuuOI0854nWdDpHfE/exec";
 
 // FUNCIONES DE UTILIDAD GLOBALES
 window.generateVerificationCode = function(ordenNumero) {
