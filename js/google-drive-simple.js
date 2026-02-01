@@ -1,15 +1,15 @@
-// google-drive-simple.js - VERSIÓN CORREGIDA PARA ACTUALIZAR QR TRAS SUBIDA
+// google-drive-simple.js - VERSIÓN PARA ETIQUETAS ÚNICAS
 const GOOGLE_DRIVE_WEB_APP_URL = window.googleDriveWebAppUrl || "https://script.google.com/macros/s/AKfycbwEcYcKJ1c7l6YJM90XJ1Nfkqeo0whIbNZyJ0NdRod4k65LBbGuuOI0854nWdDpHfE/exec";
 
 async function createWebPage() {
-    console.log('🌐 INICIANDO SUBIDA A GOOGLE DRIVE...');
+    console.log('🌐 INICIANDO SUBIDA ÚNICA A DRIVE...');
     
     if (!window.currentLabelData) {
         alert('❌ Primero debe generar una etiqueta');
         return;
     }
 
-    const loading = showLoading('Subiendo a Google Drive y vinculando QR...');
+    const loading = showLoading('Subiendo y generando QR irrepetible...');
     
     try {
         const payload = {
@@ -18,10 +18,11 @@ async function createWebPage() {
             codigo: window.currentLabelData.codigo,
             destino: window.currentLabelData.destino,
             totalBolsas: window.currentLabelData.cantidadTotal,
-            verificationCode: window.currentLabelData.verificationCode,
+            verificationCode: window.currentLabelData.verificationCode, // ID Único
             htmlContent: generateWebPageHTML() 
         };
 
+        // Enviamos a Drive
         await fetch(GOOGLE_DRIVE_WEB_APP_URL, {
             method: 'POST',
             mode: 'no-cors', 
@@ -29,18 +30,17 @@ async function createWebPage() {
             body: JSON.stringify(payload)
         });
 
-        // 1. CONSTRUIR EL ENLACE (Ajustado a la lógica de búsqueda de Drive)
-        // Como usamos no-cors no recibimos la URL, pero sabemos que se indexa por N° de Orden
-        const driveSearchLink = `https://drive.google.com/drive/search?q=${window.currentLabelData.ordenNumero}`;
+        // IMPORTANTE: El link de búsqueda ahora usa el Verification Code 
+        // Esto evita que si hay etiquetas repetidas, el QR abra la equivocada.
+        const searchToken = window.currentLabelData.verificationCode;
+        const driveLink = `https://drive.google.com/drive/search?q=${searchToken}`;
         
-        // 2. ACTUALIZAR ESTADO GLOBAL
-        window.currentWebPageUrl = driveSearchLink;
-        window.currentLabelData.driveLink = driveSearchLink;
+        // Actualizamos estado global
+        window.currentWebPageUrl = driveLink;
+        window.currentLabelData.driveLink = driveLink;
 
-        // 3. RE-GENERAR EL QR AUTOMÁTICAMENTE
-        // Esto hace que el QR en pantalla y para impresión cambie de texto a URL
+        // Forzamos al QR a redibujarse con el nuevo Link
         if (typeof window.generateQRCode === 'function') {
-            console.log('🔗 Actualizando QR con enlace web...');
             await window.generateQRCode(
                 window.currentLabelData.ordenNumero, 
                 window.currentLabelData.codigo, 
@@ -49,71 +49,55 @@ async function createWebPage() {
         }
 
         hideLoading(loading);
-        alert('✅ WEB VINCULADA\n\nEl QR ahora apunta a la página web en Drive. Ya puede imprimir la etiqueta.');
+        alert(`✅ VINCULACIÓN EXITOSA\n\nID Único: ${searchToken}\nEl QR ha sido actualizado.`);
 
     } catch (error) {
         hideLoading(loading);
-        console.error('❌ Error en createWebPage:', error);
-        alert('❌ ERROR AL CONECTAR:\n' + error.message);
+        console.error('❌ Error:', error);
+        alert('❌ Error al subir: ' + error.message);
     }
 }
 
 function generateWebPageHTML() {
-    if (!window.currentLabelData || !window.currentLabelData.materiales) return '<p>Sin datos</p>';
+    if (!window.currentLabelData) return '';
+    const data = window.currentLabelData;
     
-    // Diseño simple y limpio para que se vea bien en celulares al escanear
-    let tabla = `
-    <div style="font-family: Arial; padding: 20px;">
-        <h1 style="color: #2c3e50;">Detalles de Orden: ${window.currentLabelData.ordenNumero}</h1>
-        <p><strong>Destino:</strong> ${window.currentLabelData.destino}</p>
-        <table style="width:100%; border-collapse: collapse; margin-top: 20px;">
-            <thead>
-                <tr style="background-color: #2c3e50; color: white;">
-                    <th style="padding: 10px; border: 1px solid #ddd;">SKU</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Descripción</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Lote</th>
-                    <th style="padding: 10px; border: 1px solid #ddd;">Cant.</th>
-                </tr>
-            </thead>
-            <tbody>`;
-
-    window.currentLabelData.materiales.forEach(item => {
-        tabla += `
-        <tr>
-            <td style="padding: 10px; border: 1px solid #ddd;">${item.sku}</td>
-            <td style="padding: 10px; border: 1px solid #ddd;">${item.descripcion}</td>
-            <td style="padding: 10px; border: 1px solid #ddd;">${item.lote}</td>
-            <td style="padding: 10px; border: 1px solid #ddd; text-align: center;">${item.cantidad} BLS</td>
+    let html = `
+    <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px;">
+        <h2 style="color: #2e7d32;">AGRONORTE - Detalle de Carga</h2>
+        <hr>
+        <p><strong>Orden:</strong> ${data.ordenNumero}</p>
+        <p><strong>Destino:</strong> ${data.destino}</p>
+        <p><strong>ID Verificación:</strong> ${data.verificationCode}</p>
+        <table style="width: 100%; border-collapse: collapse;">
+            <tr style="background: #f4f4f4;">
+                <th style="padding: 10px; border: 1px solid #ddd;">Descripción</th>
+                <th style="padding: 10px; border: 1px solid #ddd;">Cant.</th>
+            </tr>`;
+    
+    data.materiales.forEach(m => {
+        html += `<tr>
+            <td style="padding: 10px; border: 1px solid #ddd;">${m.descripcion} (Lote: ${m.lote})</td>
+            <td style="padding: 10px; border: 1px solid #ddd; text-align:center;">${m.cantidad}</td>
         </tr>`;
     });
 
-    tabla += `</tbody></table>
-        <p style="margin-top:20px; font-size: 12px; color: #7f8c8d;">Verificación: ${window.currentLabelData.verificationCode}</p>
-    </div>`;
-    return tabla;
+    html += `</table></div>`;
+    return html;
 }
 
-// Funciones de UI
-function showLoading(message) {
-    const div = document.createElement('div');
-    div.id = 'drive-upload-loading';
-    div.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); display:flex; justify-content:center; align-items:center; z-index:9999; color:white; flex-direction:column; font-family:Arial;";
-    div.innerHTML = `
-        <div style="border:5px solid #f3f3f3; border-top:5px solid #3498db; border-radius:50%; width:50px; height:50px; animation:spin 1s linear infinite;"></div>
-        <p style="margin-top:20px;">${message}</p>
-        <style>@keyframes spin {0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)}}</style>
-    `;
-    document.body.appendChild(div);
-    return div;
+// UI Helpers
+function showLoading(msg) {
+    const loader = document.createElement('div');
+    loader.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); color:white; display:flex; align-items:center; justify-content:center; z-index:10000; font-family:Arial;";
+    loader.innerHTML = `<div><div class="spinner"></div><p>${msg}</p></div><style>.spinner{border:4px solid #f3f3f3; border-top:4px solid #3498db; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; margin:auto;} @keyframes spin{0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)}}</style>`;
+    document.body.appendChild(loader);
+    return loader;
 }
 
-function hideLoading(loadingDiv) {
-    if (loadingDiv) loadingDiv.remove();
-}
+function hideLoading(el) { if(el) el.remove(); }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const btn = document.getElementById('createWebPageBtn') || document.getElementById('uploadToDriveBtn');
-    if (btn) {
-        btn.addEventListener('click', createWebPage);
-    }
+    const btn = document.getElementById('createWebPageBtn');
+    if (btn) btn.addEventListener('click', createWebPage);
 });

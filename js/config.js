@@ -1,16 +1,17 @@
-// VARIABLES GLOBALES COMPARTIDAS
+// config.js - CONFIGURACIÓN Y FUNCIONES GLOBALES
 window.orderMaterials = [];
 window.currentLabelData = null;
 window.qrImageUrl = null;
-window.currentWebPageUrl = null;  // URL de la página web en Drive
+window.currentWebPageUrl = null; 
 
-// URL DE GOOGLE APPS SCRIPT
 window.googleDriveWebAppUrl = "https://script.google.com/macros/s/AKfycbwEcYcKJ1c7l6YJM90XJ1Nfkqeo0whIbNZyJ0NdRod4k65LBbGuuOI0854nWdDpHfE/exec";
 
-// FUNCIONES DE UTILIDAD GLOBALES
+// FUNCION CRITICA: Genera un ID único para que el QR no se confunda
 window.generateVerificationCode = function(ordenNumero) {
-    const timestamp = Date.now().toString().slice(-6);
-    return `AGN-${ordenNumero}-${timestamp}`;
+    // Tomamos los últimos 8 dígitos del timestamp actual (milisegundos)
+    // Esto garantiza que si generas dos "Etiqueta_1", tengan IDs distintos
+    const uniqueStamp = Date.now().toString().slice(-8);
+    return `AGN-${ordenNumero}-${uniqueStamp}`;
 };
 
 window.copyToClipboard = function(text) {
@@ -24,32 +25,13 @@ window.copyToClipboard = function(text) {
 };
 
 window.enableActionButtons = function() {
-    const actionButtons = [
-        'printSingleBtn',
-        'createWebPageBtn',
-        'saveBtn'
-    ];
-    
+    const actionButtons = ['printSingleBtn', 'createWebPageBtn', 'saveBtn', 'printThermalBtn'];
     actionButtons.forEach(btnId => {
         const btn = document.getElementById(btnId);
         if (btn) btn.disabled = false;
     });
 };
 
-// CONFIGURACIÓN INICIAL
 document.addEventListener('DOMContentLoaded', function() {
-    console.log('✅ Sistema de etiquetas inicializado');
-    console.log('🔗 Google Drive URL:', window.googleDriveWebAppUrl);
-    
-    // Inicialmente deshabilitar botones de acción
-    const actionButtons = [
-        'printSingleBtn',
-        'createWebPageBtn',
-        'saveBtn'
-    ];
-    
-    actionButtons.forEach(btnId => {
-        const btn = document.getElementById(btnId);
-        if (btn) btn.disabled = true;
-    });
+    console.log('✅ Configuración cargada con IDs únicos');
 });
