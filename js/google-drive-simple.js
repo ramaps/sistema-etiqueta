@@ -1,15 +1,15 @@
-// google-drive-simple.js - VERSIÓN PARA ETIQUETAS ÚNICAS
-const GOOGLE_DRIVE_WEB_APP_URL = window.googleDriveWebAppUrl || "https://script.google.com/macros/s/AKfycbwEcYcKJ1c7l6YJM90XJ1Nfkqeo0whIbNZyJ0NdRod4k65LBbGuuOI0854nWdDpHfE/exec";
+// google-drive-simple.js - VERSIÓN FINAL CON VISOR WEB
+const GOOGLE_DRIVE_WEB_APP_URL = window.googleDriveWebAppUrl || "https://script.google.com/macros/s/AKfycbz84MBSX34V2pNnWVEQAutGrfJXU5LOENtmGTYezzxFHi7bcBzmkgrylKNkjcDJCZLm/exec";
 
 async function createWebPage() {
-    console.log('🌐 INICIANDO SUBIDA ÚNICA A DRIVE...');
+    console.log('🌐 Iniciando subida a Drive...');
     
     if (!window.currentLabelData) {
         alert('❌ Primero debe generar una etiqueta');
         return;
     }
 
-    const loading = showLoading('Subiendo y generando QR irrepetible...');
+    const loading = showLoading('Sincronizando con la nube...');
     
     try {
         const payload = {
@@ -18,11 +18,11 @@ async function createWebPage() {
             codigo: window.currentLabelData.codigo,
             destino: window.currentLabelData.destino,
             totalBolsas: window.currentLabelData.cantidadTotal,
-            verificationCode: window.currentLabelData.verificationCode, // ID Único
+            verificationCode: window.currentLabelData.verificationCode,
             htmlContent: generateWebPageHTML() 
         };
 
-        // Enviamos a Drive
+        // 1. Enviamos los datos al Script
         await fetch(GOOGLE_DRIVE_WEB_APP_URL, {
             method: 'POST',
             mode: 'no-cors', 
@@ -30,16 +30,15 @@ async function createWebPage() {
             body: JSON.stringify(payload)
         });
 
-        // IMPORTANTE: El link de búsqueda ahora usa el Verification Code 
-        // Esto evita que si hay etiquetas repetidas, el QR abra la equivocada.
-        const searchToken = window.currentLabelData.verificationCode;
-        const driveLink = `https://drive.google.com/drive/search?q=${searchToken}`;
+        // 2. Creamos el link del VISOR (v = verificationCode)
+        // Esto es lo que permite que el celular vea la web directamente
+        const viewLink = `${GOOGLE_DRIVE_WEB_APP_URL}?v=${window.currentLabelData.verificationCode}`;
         
-        // Actualizamos estado global
-        window.currentWebPageUrl = driveLink;
-        window.currentLabelData.driveLink = driveLink;
+        // 3. Actualizamos las variables globales
+        window.currentWebPageUrl = viewLink;
+        window.currentLabelData.driveLink = viewLink;
 
-        // Forzamos al QR a redibujarse con el nuevo Link
+        // 4. Regeneramos el QR con el enlace del visor
         if (typeof window.generateQRCode === 'function') {
             await window.generateQRCode(
                 window.currentLabelData.ordenNumero, 
@@ -49,55 +48,56 @@ async function createWebPage() {
         }
 
         hideLoading(loading);
-        alert(`✅ VINCULACIÓN EXITOSA\n\nID Único: ${searchToken}\nEl QR ha sido actualizado.`);
+        alert('✅ PÁGINA LISTA\n\nEl QR se ha actualizado. Ahora, al escanearlo, se abrirá la información directamente.');
 
     } catch (error) {
         hideLoading(loading);
-        console.error('❌ Error:', error);
-        alert('❌ Error al subir: ' + error.message);
+        console.error('Error:', error);
+        alert('❌ Error al conectar con Drive: ' + error.message);
     }
 }
 
 function generateWebPageHTML() {
-    if (!window.currentLabelData) return '';
-    const data = window.currentLabelData;
+    if (!window.currentLabelData || !window.currentLabelData.materiales) return '<p>Sin datos</p>';
     
-    let html = `
-    <div style="font-family: sans-serif; max-width: 600px; margin: auto; border: 1px solid #eee; padding: 20px;">
-        <h2 style="color: #2e7d32;">AGRONORTE - Detalle de Carga</h2>
-        <hr>
-        <p><strong>Orden:</strong> ${data.ordenNumero}</p>
-        <p><strong>Destino:</strong> ${data.destino}</p>
-        <p><strong>ID Verificación:</strong> ${data.verificationCode}</p>
-        <table style="width: 100%; border-collapse: collapse;">
-            <tr style="background: #f4f4f4;">
-                <th style="padding: 10px; border: 1px solid #ddd;">Descripción</th>
-                <th style="padding: 10px; border: 1px solid #ddd;">Cant.</th>
-            </tr>`;
-    
-    data.materiales.forEach(m => {
-        html += `<tr>
-            <td style="padding: 10px; border: 1px solid #ddd;">${m.descripcion} (Lote: ${m.lote})</td>
-            <td style="padding: 10px; border: 1px solid #ddd; text-align:center;">${m.cantidad}</td>
+    let tabla = `
+    <table style="width:100%; border-collapse: collapse; margin-top: 15px;">
+        <thead>
+            <tr style="background: #2c3e50; color: white;">
+                <th style="padding: 10px; text-align: left;">Descripción / Lote</th>
+                <th style="padding: 10px; text-align: center;">Cant.</th>
+            </tr>
+        </thead>
+        <tbody>`;
+
+    window.currentLabelData.materiales.forEach(item => {
+        tabla += `
+        <tr>
+            <td style="padding: 10px; border-bottom: 1px solid #eee;">
+                <strong>${item.descripcion}</strong><br>
+                <small style="color: #666;">SKU: ${item.sku} | Lote: ${item.lote}</small>
+            </td>
+            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
+                ${item.cantidad} BLS
+            </td>
         </tr>`;
     });
 
-    html += `</table></div>`;
-    return html;
+    tabla += `</tbody></table>`;
+    return tabla;
 }
 
-// UI Helpers
 function showLoading(msg) {
-    const loader = document.createElement('div');
-    loader.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.7); color:white; display:flex; align-items:center; justify-content:center; z-index:10000; font-family:Arial;";
-    loader.innerHTML = `<div><div class="spinner"></div><p>${msg}</p></div><style>.spinner{border:4px solid #f3f3f3; border-top:4px solid #3498db; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite; margin:auto;} @keyframes spin{0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)}}</style>`;
-    document.body.appendChild(loader);
-    return loader;
+    const div = document.createElement('div');
+    div.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); color:white; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10000; font-family:Arial;";
+    div.innerHTML = `<div style="border:5px solid #f3f3f3; border-top:5px solid #3498db; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite;"></div><p style="margin-top:20px;">${msg}</p><style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>`;
+    document.body.appendChild(div);
+    return div;
 }
 
 function hideLoading(el) { if(el) el.remove(); }
 
 document.addEventListener('DOMContentLoaded', function() {
-    const btn = document.getElementById('createWebPageBtn');
+    const btn = document.getElementById('createWebPageBtn') || document.getElementById('uploadToDriveBtn');
     if (btn) btn.addEventListener('click', createWebPage);
 });

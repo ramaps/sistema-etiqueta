@@ -1,17 +1,15 @@
-// config.js - CONFIGURACIÓN Y FUNCIONES GLOBALES
+// config.js - CONFIGURACIÓN GLOBAL
 window.orderMaterials = [];
 window.currentLabelData = null;
 window.qrImageUrl = null;
 window.currentWebPageUrl = null; 
 
-window.googleDriveWebAppUrl = "https://script.google.com/macros/s/AKfycbwEcYcKJ1c7l6YJM90XJ1Nfkqeo0whIbNZyJ0NdRod4k65LBbGuuOI0854nWdDpHfE/exec";
+// TU NUEVA URL DE GOOGLE APPS SCRIPT
+window.googleDriveWebAppUrl = "https://script.google.com/macros/s/AKfycbz84MBSX34V2pNnWVEQAutGrfJXU5LOENtmGTYezzxFHi7bcBzmkgrylKNkjcDJCZLm/exec";
 
-// FUNCION CRITICA: Genera un ID único para que el QR no se confunda
 window.generateVerificationCode = function(ordenNumero) {
-    // Tomamos los últimos 8 dígitos del timestamp actual (milisegundos)
-    // Esto garantiza que si generas dos "Etiqueta_1", tengan IDs distintos
-    const uniqueStamp = Date.now().toString().slice(-8);
-    return `AGN-${ordenNumero}-${uniqueStamp}`;
+    const timestamp = Date.now().toString().slice(-6);
+    return `AGN-${ordenNumero}-${timestamp}`;
 };
 
 window.copyToClipboard = function(text) {
