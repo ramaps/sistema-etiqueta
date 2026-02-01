@@ -1,4 +1,4 @@
-// google-drive-simple.js - VERSIÓN CORREGIDA PARA DETALLE DE MATERIALES
+// google-drive-simple.js - VERSIÓN ACTUALIZADA CON SOLICITANTE
 const GOOGLE_DRIVE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxE9aDhPs99lqTQ7z1_bRub-UOVZI3ITJ0te3ekKMhzEtrSuUa1p_kjH4u3GthGRNFZ/exec";
 
 async function createWebPage() {
@@ -10,27 +10,31 @@ async function createWebPage() {
     const loading = showLoading('Generando página de consulta...');
     
     try {
+        // Armamos el paquete de datos incluyendo al SOLICITANTE
         const payload = {
             action: "createWebPage",
             ordenNumero: window.currentLabelData.ordenNumero,
             codigo: window.currentLabelData.codigo,
             destino: window.currentLabelData.destino,
-            solicitante: window.currentLabelData.solicitante || "No especificado",
+            solicitante: window.currentLabelData.solicitante || "No especificado", // <-- AGREGADO
             totalBolsas: window.currentLabelData.cantidadTotal,
             verificationCode: window.currentLabelData.verificationCode,
             htmlContent: generateWebPageHTML() 
         };
 
+        // Enviar datos al script de Google
         await fetch(GOOGLE_DRIVE_WEB_APP_URL, {
             method: 'POST',
             mode: 'no-cors', 
             body: JSON.stringify(payload)
         });
 
+        // Generamos el link de visualización
         const viewLink = `${GOOGLE_DRIVE_WEB_APP_URL}?v=${window.currentLabelData.verificationCode}`;
         window.currentWebPageUrl = viewLink;
         window.currentLabelData.driveLink = viewLink;
 
+        // Actualizamos el QR físico para que apunte a la nueva web
         if (typeof window.generateQRCode === 'function') {
             await window.generateQRCode(
                 window.currentLabelData.ordenNumero, 
@@ -40,10 +44,11 @@ async function createWebPage() {
         }
 
         hideLoading(loading);
-        alert('✅ VINCULACIÓN EXITOSA\n\nEl detalle ahora se verá desglosado en la web.');
+        alert('✅ VINCULACIÓN EXITOSA\n\nEl QR físico ahora incluye al Solicitante y apunta a la web de consulta.');
 
     } catch (error) {
         hideLoading(loading);
+        console.error("Error en createWebPage:", error);
         alert('❌ Error: ' + error.message);
     }
 }
@@ -51,33 +56,19 @@ async function createWebPage() {
 function generateWebPageHTML() {
     if (!window.currentLabelData || !window.currentLabelData.materiales) return '';
     let html = '';
-    
     window.currentLabelData.materiales.forEach(item => {
-        // Limpiamos los datos para que no se amontonen
-        const material = item.descripcion || "Sin descripción";
-        const lote = item.lote || "S/L";
-        const solicitante = item.solicitante || window.currentLabelData.solicitante || "";
-
         html += `
         <tr>
             <td>
-                <div style="font-weight: bold; color: #2c3e50; font-size: 0.95rem; margin-bottom: 3px;">
-                    ${material}
-                </div>
-                <div style="color: #e67e22; font-size: 0.8rem; font-weight: 600;">
-                    LOTE: ${lote}
-                </div>
-                ${solicitante ? `<div style="color: #7f8c8d; font-size: 0.75rem; margin-top: 2px;">SOL.: ${solicitante}</div>` : ''}
+                <strong>${item.descripcion}</strong>
+                <span class="sku-lote">SKU: ${item.sku} | Lote: ${item.lote}</span>
             </td>
-            <td class="cant-cell" style="vertical-align: middle;">
-                ${parseFloat(item.cantidad).toFixed(1)} BLS
-            </td>
+            <td class="cant-cell">${parseFloat(item.cantidad).toFixed(1)} BLS</td>
         </tr>`;
     });
     return html;
 }
 
-// ... (las funciones showLoading y hideLoading se mantienen igual que las tienes)
 function showLoading(msg) {
     const div = document.createElement('div');
     div.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); color:white; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10000; font-family:Arial;";
