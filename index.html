@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sistema de Etiquetas - Modelo Orden</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="css/style.css">
+    <!-- Librerías para QR -->
+    <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <h1><i class="fas fa-tag"></i> Sistema de Etiquetas - Modelo Orden</h1>
+            <p class="subtitle">Creación de etiquetas con QR y páginas web en Google Drive</p>
+        </header>
+        
+        <div class="tabs">
+            <button class="tab active" data-tab="tab-1">
+                <i class="fas fa-edit"></i> Crear Etiqueta
+            </button>
+            <button class="tab" data-tab="tab-2">
+                <i class="fas fa-history"></i> Historial
+            </button>
+        </div>
+        
+        <!-- Pestaña 1: Crear Etiqueta -->
+        <div class="tab-content active" id="tab-1">
+            <div class="app-container">
+                <section class="form-section">
+                    <h2 class="section-title"><i class="fas fa-edit"></i> Datos de la Orden</h2>
+                    
+                    <form id="orderForm">
+                        <div class="form-row">
+                            <div class="form-group">
+                                <label for="ordenNumero"><i class="fas fa-hashtag"></i> N° de Orden</label>
+                                <input type="text" id="ordenNumero" required placeholder="Ej: 001">
+                            </div>
+                            
+                            <div class="form-group">
+                                <label for="codigo"><i class="fas fa-barcode"></i> Código / N° de Pedido</label>
+                                <input type="text" id="codigo" required placeholder="Ej: 235235">
+                            </div>
+                        </div>
+                        
+                        <div class="form-group full-width">
+                            <label for="destino"><i class="fas fa-map-marker-alt"></i> Destino</label>
+                            <input type="text" id="destino" required placeholder="Ej: AGRO BAYER S.R.L.">
+                        </div>
+                        
+                        <h3 class="section-title"><i class="fas fa-boxes"></i> Materiales de la Orden</h3>
+                        
+                        <div class="materials-container">
+                            <div class="material-form">
+                                <div class="form-group">
+                                    <label for="sku">SKU</label>
+                                    <input type="text" id="sku" placeholder="Ej: 30116095">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="descripcion">Descripción</label>
+                                    <input type="text" id="descripcion" placeholder="Ej: C DK DK72-20RR2 R5 80M TB AR">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="lote">Lote</label>
+                                    <input type="text" id="lote" placeholder="Ej: YE1091092">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="cantidad">Cantidad (BLS)</label>
+                                    <input type="number" id="cantidad" step="0.1" min="0" placeholder="Ej: 6.0">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="solicitante">Solicitante</label>
+                                    <input type="text" id="solicitante" placeholder="Ej: STEFANUTTI RAMIRO E.">
+                                </div>
+                                
+                                <div class="form-group">
+                                    <label for="bandera">Código Bandera</label>
+                                    <input type="text" id="bandera" placeholder="Ej: 1813656">
+                                </div>
+                            </div>
+                            
+                            <div class="buttons">
+                                <button type="button" id="addMaterialBtn" class="btn btn-success">
+                                    <i class="fas fa-plus"></i> Agregar Material
+                                </button>
+                            </div>
+                            
+                            <div class="materials-list" id="materialsList">
+                                <div class="empty-materials">No hay materiales agregados. Agrega materiales usando el formulario superior.</div>
+                            </div>
+                            
+                            <!-- Resumen de total de bolsas -->
+                            <div class="label-total-container" id="formTotalContainer" style="display: none; margin-top: 15px;">
+                                <div class="label-total-title">TOTAL DE BOLSAS EN ESTA ORDEN:</div>
+                                <div class="label-total-value" id="formTotalValue">0.0 BLS</div>
+                            </div>
+                        </div>
+                        
+                        <div class="buttons" style="margin-top: 20px;">
+                            <button type="submit" class="btn">
+                                <i class="fas fa-qrcode"></i> Generar Etiqueta
+                            </button>
+                            <button type="button" id="clearOrderBtn" class="btn btn-secondary">
+                                <i class="fas fa-broom"></i> Limpiar Todo
+                            </button>
+                        </div>
+                    </form>
+                </section>
+                
+                <section class="preview-section">
+                    <h2 class="section-title"><i class="fas fa-eye"></i> Vista Previa de Etiqueta</h2>
+                    
+                    <div class="label-preview-container">
+                        <div class="label-preview" id="labelPreview">
+                            <!-- Encabezado con QR al lado -->
+                            <div class="label-header">
+                                <div class="label-header-top">
+                                    <!-- QR Code -->
+                                    <div class="label-qr-container">
+                                        <div id="labelQR"></div>
+                                    </div>
+                                    
+                                    <!-- Información de la orden -->
+                                    <div class="label-header-info">
+                                        <div class="label-orden">ORDEN:</div>
+                                        <div class="label-orden-numero" id="previewOrdenNumero">001</div>
+                                        <div class="label-codigo" id="previewCodigo">N de Pedido: 235235</div>
+                                        <div class="label-destino">DESTINO:</div>
+                                        <div class="label-destino-nombre" id="previewDestino">AGRO BAYER S.R.L.</div>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="label-separator"></div>
+                            
+                            <div class="label-content" id="previewMaterials">
+                                <!-- Los materiales se mostrarán aquí -->
+                                <div class="label-item">
+                                    <div class="label-item-header">
+                                        <div class="label-cantidad">CANTIDADES:</div>
+                                        <div class="label-cantidad-total" id="previewCantidadTotal">0.0 BLS</div>
+                                    </div>
+                                    
+                                    <div class="label-sku">SKU: 30116095</div>
+                                    <div class="label-descripcion">C DK DK72-20RR2 R5 80M TB AR</div>
+                                    <div class="label-lote">LOTE: YE1091092 -</div>
+                                    <div class="label-sol">SOL.: STEFANUTTI RAMIRO E.</div>
+                                    <div class="label-bandera">BANDERA - 829317064</div>
+                                </div>
+                            </div>
+                            
+                            <!-- Resumen total de bolsas -->
+                            <div class="label-total-container" id="previewTotalContainer">
+                                <div class="label-total-title">TOTAL GENERAL DE BOLSAS:</div>
+                                <div class="label-total-value" id="previewTotalValue">0.0 BLS</div>
+                            </div>
+                            
+                            <div class="label-separator"></div>
+                            
+                            <!-- Pie de la etiqueta actualizado -->
+                            <div class="label-footer" id="previewLogistica">AGROQUIMICOS DEL NORTE S.A.</div>
+                        </div>
+                    </div>
+                    
+                    <div class="buttons">
+                        <button id="printSingleBtn" class="btn btn-print" disabled>
+                            <i class="fas fa-print"></i> Imprimir Etiqueta
+                        </button>
+                        <button id="createWebPageBtn" class="btn btn-drive" disabled>
+                            <i class="fab fa-google-drive"></i> Crear Página Web
+                        </button>
+                        <button id="saveBtn" class="btn" disabled>
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
+                    </div>
+                    
+                    <div style="margin-top: 15px; text-align: center; color: #666; font-size: 0.9rem;">
+                        <i class="fas fa-qrcode"></i> El QR contiene la información de la etiqueta y enlace a la página web
+                    </div>
+                </section>
+            </div>
+        </div>
+        
+        <!-- Pestaña 2: Historial -->
+        <div class="tab-content" id="tab-2">
+            <h2 class="section-title"><i class="fas fa-history"></i> Historial de Etiquetas</h2>
+            
+            <div class="history-list" id="historyList">
+                <div class="empty-history">No hay etiquetas en el historial. Genera una etiqueta para verla aquí.</div>
+            </div>
+            
+            <div class="buttons" style="margin-top: 20px;">
+                <button id="clearHistoryBtn" class="btn btn-secondary">
+                    <i class="fas fa-trash-alt"></i> Limpiar Historial
+                </button>
+                <button id="exportHistoryBtn" class="btn">
+                    <i class="fas fa-download"></i> Exportar Historial
+                </button>
+            </div>
+        </div>
+    </div>
+
+<!-- Scripts -->
+<script src="js/config.js"></script>
+<script src="js/main.js"></script>
+<script src="js/form-handler.js"></script>
+<script src="js/label-generator.js"></script>
+<script src="js/qr-generator.js"></script>
+<script src="js/print-functions.js"></script>
+<script src="js/history-manager.js"></script>
+<script src="js/google-drive-simple.js"></script>
+</body>
+</html>
