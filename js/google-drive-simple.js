@@ -1,5 +1,5 @@
-// google-drive-simple.js - VERSIÓN FINAL CON VISOR WEB
-const GOOGLE_DRIVE_WEB_APP_URL = window.googleDriveWebAppUrl || "https://script.google.com/macros/s/AKfycbz84MBSX34V2pNnWVEQAutGrfJXU5LOENtmGTYezzxFHi7bcBzmkgrylKNkjcDJCZLm/exec";
+// google-drive-simple.js - VERSIÓN FINAL AGROQUIMICOS DEL NORTE
+const GOOGLE_DRIVE_WEB_APP_URL = window.googleDriveWebAppUrl || "https://script.google.com/macros/s/AKfycbxUz4J-3wL1x9MknyZQiuyFHUTo1jw8C12zQ-w5dmcy57076dkYY9_MYIWQATY0dtMU/exec";
 
 async function createWebPage() {
     console.log('🌐 Iniciando subida a Drive...');
@@ -15,7 +15,7 @@ async function createWebPage() {
         const payload = {
             action: "createWebPage",
             ordenNumero: window.currentLabelData.ordenNumero,
-            codigo: window.currentLabelData.codigo,
+            codigo: window.currentLabelData.codigo, // N° de pedido
             destino: window.currentLabelData.destino,
             totalBolsas: window.currentLabelData.cantidadTotal,
             verificationCode: window.currentLabelData.verificationCode,
@@ -30,15 +30,13 @@ async function createWebPage() {
             body: JSON.stringify(payload)
         });
 
-        // 2. Creamos el link del VISOR (v = verificationCode)
-        // Esto es lo que permite que el celular vea la web directamente
+        // 2. Creamos el link del VISOR
         const viewLink = `${GOOGLE_DRIVE_WEB_APP_URL}?v=${window.currentLabelData.verificationCode}`;
         
-        // 3. Actualizamos las variables globales
         window.currentWebPageUrl = viewLink;
         window.currentLabelData.driveLink = viewLink;
 
-        // 4. Regeneramos el QR con el enlace del visor
+        // 3. Regeneramos el QR con el enlace del visor
         if (typeof window.generateQRCode === 'function') {
             await window.generateQRCode(
                 window.currentLabelData.ordenNumero, 
@@ -48,49 +46,36 @@ async function createWebPage() {
         }
 
         hideLoading(loading);
-        alert('✅ PÁGINA LISTA\n\nEl QR se ha actualizado. Ahora, al escanearlo, se abrirá la información directamente.');
+        alert('✅ WEB VINCULADA\n\nEl QR se ha actualizado. Ahora mostrará el diseño profesional en el celular.');
 
     } catch (error) {
         hideLoading(loading);
-        console.error('Error:', error);
         alert('❌ Error al conectar con Drive: ' + error.message);
     }
 }
 
 function generateWebPageHTML() {
-    if (!window.currentLabelData || !window.currentLabelData.materiales) return '<p>Sin datos</p>';
+    if (!window.currentLabelData || !window.currentLabelData.materiales) return '';
     
-    let tabla = `
-    <table style="width:100%; border-collapse: collapse; margin-top: 15px;">
-        <thead>
-            <tr style="background: #2c3e50; color: white;">
-                <th style="padding: 10px; text-align: left;">Descripción / Lote</th>
-                <th style="padding: 10px; text-align: center;">Cant.</th>
-            </tr>
-        </thead>
-        <tbody>`;
-
+    let html = '';
     window.currentLabelData.materiales.forEach(item => {
-        tabla += `
+        // Formateamos cada fila para que coincida con el CSS del Script
+        html += `
         <tr>
-            <td style="padding: 10px; border-bottom: 1px solid #eee;">
-                <strong>${item.descripcion}</strong><br>
-                <small style="color: #666;">SKU: ${item.sku} | Lote: ${item.lote}</small>
+            <td>
+                <strong>${item.descripcion}</strong>
+                <span class="sku-lote">SKU: ${item.sku} | Lote: ${item.lote}</span>
             </td>
-            <td style="padding: 10px; border-bottom: 1px solid #eee; text-align: center;">
-                ${item.cantidad} BLS
-            </td>
+            <td class="cant-cell">${parseFloat(item.cantidad).toFixed(1)} BLS</td>
         </tr>`;
     });
-
-    tabla += `</tbody></table>`;
-    return tabla;
+    return html;
 }
 
 function showLoading(msg) {
     const div = document.createElement('div');
-    div.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.8); color:white; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10000; font-family:Arial;";
-    div.innerHTML = `<div style="border:5px solid #f3f3f3; border-top:5px solid #3498db; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite;"></div><p style="margin-top:20px;">${msg}</p><style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>`;
+    div.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); color:white; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10000; font-family:Arial;";
+    div.innerHTML = `<div style="border:5px solid #f3f3f3; border-top:5px solid #3498db; border-radius:50%; width:45px; height:45px; animation:spin 1s linear infinite;"></div><p style="margin-top:20px; font-weight:bold;">${msg}</p><style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>`;
     document.body.appendChild(div);
     return div;
 }
