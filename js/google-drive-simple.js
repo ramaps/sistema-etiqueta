@@ -1,42 +1,35 @@
-// google-drive-simple.js - VERSIÓN FINAL AGROQUIMICOS DEL NORTE
-const GOOGLE_DRIVE_WEB_APP_URL = window.googleDriveWebAppUrl || "https://script.google.com/macros/s/AKfycbxUz4J-3wL1x9MknyZQiuyFHUTo1jw8C12zQ-w5dmcy57076dkYY9_MYIWQATY0dtMU/exec";
+// google-drive-simple.js - SIN QR EN LA WEB
+const GOOGLE_DRIVE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwxnOAdFQhIzQqHcj5SJ2YZv54miHzHpas0NoUVoE-QgGHhgTgSSIG3VeKQh8LMSeq9/exec";
 
 async function createWebPage() {
-    console.log('🌐 Iniciando subida a Drive...');
-    
     if (!window.currentLabelData) {
         alert('❌ Primero debe generar una etiqueta');
         return;
     }
 
-    const loading = showLoading('Sincronizando con la nube...');
+    const loading = showLoading('Generando página de consulta...');
     
     try {
         const payload = {
             action: "createWebPage",
             ordenNumero: window.currentLabelData.ordenNumero,
-            codigo: window.currentLabelData.codigo, // N° de pedido
+            codigo: window.currentLabelData.codigo,
             destino: window.currentLabelData.destino,
             totalBolsas: window.currentLabelData.cantidadTotal,
             verificationCode: window.currentLabelData.verificationCode,
             htmlContent: generateWebPageHTML() 
         };
 
-        // 1. Enviamos los datos al Script
         await fetch(GOOGLE_DRIVE_WEB_APP_URL, {
             method: 'POST',
             mode: 'no-cors', 
-            headers: { 'Content-Type': 'text/plain;charset=utf-8' },
             body: JSON.stringify(payload)
         });
 
-        // 2. Creamos el link del VISOR
         const viewLink = `${GOOGLE_DRIVE_WEB_APP_URL}?v=${window.currentLabelData.verificationCode}`;
-        
         window.currentWebPageUrl = viewLink;
         window.currentLabelData.driveLink = viewLink;
 
-        // 3. Regeneramos el QR con el enlace del visor
         if (typeof window.generateQRCode === 'function') {
             await window.generateQRCode(
                 window.currentLabelData.ordenNumero, 
@@ -46,20 +39,18 @@ async function createWebPage() {
         }
 
         hideLoading(loading);
-        alert('✅ WEB VINCULADA\n\nEl QR se ha actualizado. Ahora mostrará el diseño profesional en el celular.');
+        alert('✅ VINCULACIÓN EXITOSA\n\nEl QR físico ahora apunta a la web de consulta.');
 
     } catch (error) {
         hideLoading(loading);
-        alert('❌ Error al conectar con Drive: ' + error.message);
+        alert('❌ Error: ' + error.message);
     }
 }
 
 function generateWebPageHTML() {
     if (!window.currentLabelData || !window.currentLabelData.materiales) return '';
-    
     let html = '';
     window.currentLabelData.materiales.forEach(item => {
-        // Formateamos cada fila para que coincida con el CSS del Script
         html += `
         <tr>
             <td>
@@ -75,7 +66,7 @@ function generateWebPageHTML() {
 function showLoading(msg) {
     const div = document.createElement('div');
     div.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); color:white; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10000; font-family:Arial;";
-    div.innerHTML = `<div style="border:5px solid #f3f3f3; border-top:5px solid #3498db; border-radius:50%; width:45px; height:45px; animation:spin 1s linear infinite;"></div><p style="margin-top:20px; font-weight:bold;">${msg}</p><style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>`;
+    div.innerHTML = `<div style="border:5px solid #f3f3f3; border-top:5px solid #3498db; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite;"></div><p style="margin-top:20px;">${msg}</p><style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>`;
     document.body.appendChild(div);
     return div;
 }
