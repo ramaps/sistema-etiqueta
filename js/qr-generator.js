@@ -1,117 +1,71 @@
-// qr-generator.js - VERSIÓN SIMPLIFICADA PARA PÁGINAS WEB
+// qr-generator.js - VERSIÓN ACTUALIZADA PARA ENLACES DINÁMICOS
 let labelQR;
 
-// INICIALIZAR REFERENCIAS
 document.addEventListener('DOMContentLoaded', function() {
     console.log('QR Generator inicializando...');
-    
     labelQR = document.getElementById('labelQR');
-    
-    if (!labelQR) {
-        console.error('No se encontró el elemento labelQR');
-    }
-    
-    console.log('QR Generator inicializado correctamente');
+    if (!labelQR) console.error('No se encontró el elemento labelQR');
 });
 
 // Generar código QR inteligente
 async function generateQRCode(ordenNumero, codigo, destino) {
     console.log('Generando QR inteligente...');
     
-    // Verificar que tenemos el contenedor
-    if (!labelQR) {
-        labelQR = document.getElementById('labelQR');
-        if (!labelQR) {
-            console.error('No se puede generar QR: labelQR no encontrado');
-            return null;
-        }
-    }
-    
-    // Limpiar QR anterior
+    if (!labelQR) labelQR = document.getElementById('labelQR');
+    if (!labelQR) return null;
+
     labelQR.innerHTML = '<div style="text-align: center; padding: 10px;">Generando QR...</div>';
     
-    // Generar código de verificación
     const verificationCode = window.generateVerificationCode ? 
         window.generateVerificationCode(ordenNumero) : 
         'AGN-' + Date.now().toString().slice(-6);
     
-    // Crear texto estructurado para el QR
     let qrText = '';
     
-    // VERIFICAR SI YA TENEMOS ENLACE WEB
-    if (currentWebPageUrl) {
-        // Si ya tenemos página web, el QR debe apuntar DIRECTAMENTE allí
-        qrText = `${currentWebPageUrl}\n\n` +
-                `AGRONORTE - PÁGINA WEB DE ETIQUETA\n` +
-                `===================================\n` +
-                `ORDEN: ${ordenNumero}\n` +
-                `PEDIDO: ${codigo}\n` +
-                `DESTINO: ${destino}\n` +
-                `CÓDIGO: ${verificationCode}\n` +
-                `===================================\n` +
-                `Escanea para ver la página web completa`;
+    // USAR LA URL DE DRIVE SI EXISTE (window.currentWebPageUrl se define en google-drive-simple.js)
+    if (window.currentWebPageUrl) {
+        // Ponemos la URL al principio para que el celular la detecte como link
+        qrText = `${window.currentWebPageUrl}\n\n` +
+                 `AGRONORTE - DETALLES ORDEN ${ordenNumero}\n` +
+                 `Código Verificación: ${verificationCode}`;
+        console.log('✅ QR generado con enlace web');
     } else {
-        // Si no hay página web, mostrar datos básicos
+        // Texto normal si no se ha subido a Drive aún
         const totalBolsas = orderMaterials.reduce((sum, item) => sum + item.cantidad, 0).toFixed(1);
-        
-        qrText = `AGRONORTE - ETIQUETA\n` +
-                `===================================\n` +
-                `ORDEN: ${ordenNumero}\n` +
-                `PEDIDO: ${codigo}\n` +
-                `DESTINO: ${destino}\n` +
-                `FECHA: ${new Date().toLocaleDateString('es-ES')}\n` +
-                `CÓDIGO: ${verificationCode}\n` +
-                `MATERIALES: ${orderMaterials.length}\n` +
-                `TOTAL BOLSAS: ${totalBolsas}\n` +
-                `===================================\n` +
-                `Sube a Drive para obtener enlace web`;
+        qrText = `AGRONORTE\nORDEN: ${ordenNumero}\nPEDIDO: ${codigo}\nDESTINO: ${destino}\nTOTAL: ${totalBolsas} BLS\nCOD: ${verificationCode}`;
+        console.log('ℹ️ QR generado con texto plano (sin link)');
     }
     
-    // GUARDAR TEXTO BASE
     if (currentLabelData) {
         currentLabelData.qrText = qrText;
         currentLabelData.verificationCode = verificationCode;
     }
     
-    // Generar y retornar la URL del QR
-    const qrUrl = createQRCodeImage(qrText, ordenNumero, codigo, !!currentWebPageUrl);
+    // Generar la imagen (detecta si tiene URL para poner el indicador visual)
+    const qrUrl = createQRCodeImage(qrText, ordenNumero, codigo, !!window.currentWebPageUrl);
     
-    // Actualizar currentLabelData con el QR
     if (currentLabelData) {
         currentLabelData.qrImageUrl = qrUrl;
-        console.log('QR actualizado en currentLabelData');
     }
     
     return qrUrl;
 }
 
-// Nueva función para crear la imagen del QR
 function createQRCodeImage(qrContent, ordenNumero, codigo, hasWebUrl = false) {
-    console.log('Creando imagen QR...');
-    
-    // Crear un canvas más grande para mejor calidad
     const canvas = document.createElement('canvas');
-    const size = 250; // Tamaño aumentado para mejor calidad
+    const size = 300; // Un poco más de resolución
     canvas.width = size;
     canvas.height = size;
     
     try {
-        // Usar qrcode-generator si está disponible
         if (typeof qrcode !== 'undefined') {
-            console.log('Generando QR con qrcode-generator...');
-            
-            const typeNumber = 0; // Auto-detect
-            const errorCorrectionLevel = hasWebUrl ? 'L' : 'M';
-            
-            const qr = qrcode(typeNumber, errorCorrectionLevel);
+            const qr = qrcode(0, 'M');
             qr.addData(qrContent);
             qr.make();
             
             const ctx = canvas.getContext('2d');
             const qrSize = qr.getModuleCount();
             const cellSize = size / qrSize;
-            
-            console.log('QR generado (módulos:', qrSize, ')');
             
             // Fondo blanco
             ctx.fillStyle = "#FFFFFF";
@@ -122,131 +76,59 @@ function createQRCodeImage(qrContent, ordenNumero, codigo, hasWebUrl = false) {
             for (let row = 0; row < qrSize; row++) {
                 for (let col = 0; col < qrSize; col++) {
                     if (qr.isDark(row, col)) {
-                        ctx.fillRect(
-                            col * cellSize,
-                            row * cellSize,
-                            cellSize,
-                            cellSize
-                        );
+                        ctx.fillRect(col * cellSize, row * cellSize, cellSize, cellSize);
                     }
                 }
             }
-            
-            console.log('QR dibujado en canvas');
+
+            // MARCA VISUAL: Si tiene link, dibujamos un pequeño icono o color distintivo
+            if (hasWebUrl) {
+                ctx.fillStyle = "#34A853"; // Verde Google
+                ctx.fillRect(size - 40, size - 40, 40, 40);
+                ctx.fillStyle = "white";
+                ctx.font = "bold 12px Arial";
+                ctx.fillText("WEB", size - 35, size - 15);
+            }
             
         } else {
-            console.warn('qrcode-generator no disponible, usando fallback');
             drawSimpleQR(canvas, ordenNumero, codigo, hasWebUrl);
         }
-        
     } catch (error) {
         console.error('Error generando QR:', error);
         drawSimpleQR(canvas, ordenNumero, codigo, hasWebUrl);
     }
     
-    // Convertir canvas a imagen de alta calidad
     const qrUrl = canvas.toDataURL('image/png', 1.0);
-    qrImageUrl = qrUrl; // Guardar en variable global
-    
-    // IMPORTANTE: Guardar en datos actuales INMEDIATAMENTE
-    if (currentLabelData) {
-        currentLabelData.qrImageUrl = qrUrl;
-        console.log('QR guardado en currentLabelData');
-    }
-    
-    // Mostrar imagen del QR
     displayQRImage(qrUrl, hasWebUrl);
-    
     return qrUrl;
 }
 
-// Función para mostrar la imagen del QR
 function displayQRImage(qrUrl, hasWebUrl = false) {
-    if (!qrUrl) {
-        console.error('No hay URL de QR para mostrar');
-        return;
-    }
-    
-    if (!labelQR) {
-        labelQR = document.getElementById('labelQR');
-        if (!labelQR) {
-            console.error('No se puede mostrar QR: labelQR no encontrado');
-            return;
-        }
-    }
-    
     labelQR.innerHTML = '';
-    
     const container = document.createElement('div');
-    container.style.cssText = `
-        width: 80px;
-        height: 80px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        overflow: hidden;
-        cursor: pointer;
-        position: relative;
-        border: 1px solid #ddd;
-        padding: 2px;
-        background: white;
-    `;
+    container.style.cssText = "width:80px; height:80px; display:flex; align-items:center; justify-content:center; border:1px solid #ddd; background:white; position:relative;";
     
     const img = document.createElement('img');
     img.src = qrUrl;
-    img.width = 80;
-    img.height = 80;
-    img.style.cssText = `
-        width: 100%;
-        height: 100%;
-        object-fit: contain;
-        image-rendering: crisp-edges;
-    `;
-    img.alt = 'Código QR de la etiqueta';
-    img.title = hasWebUrl ? 
-        'Escanea para ver la página web completa' : 
-        'Escanea para ver detalles de la etiqueta';
+    img.style.width = "100%";
     img.id = 'qrImage';
     
     container.appendChild(img);
     labelQR.appendChild(container);
-    
-    console.log('QR mostrado en pantalla');
 }
 
-// Función para dibujar un QR simple (fallback)
 function drawSimpleQR(canvas, ordenNumero, codigo, hasWebUrl = false) {
     const ctx = canvas.getContext('2d');
-    
-    // Fondo blanco
     ctx.fillStyle = "#FFFFFF";
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-    
-    // Patrón cuadrado en las esquinas
     ctx.fillStyle = "#000000";
-    ctx.fillRect(10, 10, 40, 40);
-    ctx.fillRect(200, 10, 40, 40);
-    ctx.fillRect(10, 200, 40, 40);
-    
-    // Si tiene enlace web, agregar indicador
-    if (hasWebUrl) {
-        ctx.fillStyle = "#34A853";
-        ctx.font = "bold 14px Arial";
-        ctx.textAlign = "center";
-        ctx.fillText("WEB", 125, 60);
-    }
-    
-    // Texto en el centro
-    ctx.fillStyle = "#000000";
-    ctx.font = "bold 10px Arial";
+    ctx.fillRect(10, 10, 50, 50);
+    ctx.fillRect(canvas.width - 60, 10, 50, 50);
+    ctx.fillRect(10, canvas.height - 60, 50, 50);
+    ctx.font = "bold 14px Arial";
     ctx.textAlign = "center";
-    ctx.fillText("ORD", 125, 130);
-    ctx.fillText(ordenNumero.substring(0, 8), 125, 145);
-    ctx.fillText("COD", 125, 165);
-    ctx.fillText(codigo.substring(0, 8), 125, 180);
-    
-    console.log('QR simple generado como fallback');
+    ctx.fillText("ORD: " + ordenNumero, canvas.width/2, canvas.height/2);
+    if(hasWebUrl) ctx.fillText("CON ENLACE WEB", canvas.width/2, canvas.height/2 + 20);
 }
 
-// Hacer la función disponible globalmente
 window.generateQRCode = generateQRCode;
