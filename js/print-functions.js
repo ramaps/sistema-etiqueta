@@ -1,4 +1,4 @@
-// print-functions.js - VERSIÓN COMPLETA CORREGIDA
+// print-functions.js - VERSIÓN FINAL SEGURA Y PROFESIONAL
 
 document.addEventListener('DOMContentLoaded', function() {
     const printSingleBtn = document.getElementById('printSingleBtn');
@@ -22,341 +22,145 @@ function abrirVentanaImpresion(tipo) {
     const esTermica = (tipo === 'THERMAL');
     const printWindow = window.open('', '_blank');
 
-    // Verificar si tenemos URL del QR
-    const qrUrl = data.qrImageUrl || '';
-    const tieneQR = qrUrl && qrUrl.startsWith('data:image');
-    
-    // TAMAÑOS:
-    // A4: 210mm × 297mm (normalmente con márgenes)
-    // Térmica: 100mm × 150mm (10x15cm)
-    
-    const esA4 = !esTermica;
-    
-    // Calcular cuántos materiales caben por página
-    const materialesPorPagina = esTermica ? 4 : 8; // Ajustar según espacio
-    
-    // Dividir materiales en páginas si es necesario
-    const paginasDeMateriales = [];
-    for (let i = 0; i < data.materiales.length; i += materialesPorPagina) {
-        paginasDeMateriales.push(data.materiales.slice(i, i + materialesPorPagina));
-    }
-
-    // Estilos CSS según el tipo de impresión
     const styles = esTermica ? `
-        @page { 
-            size: 100mm 150mm; 
-            margin: 0; 
-        }
-        body { 
-            margin: 0;
-            padding: 3mm;
-            width: 94mm;  /* 100mm - 6mm de padding total */
-            height: 144mm; /* 150mm - 6mm de padding total */
-            font-family: 'Courier New', monospace;
-            font-size: 9px;
-            line-height: 1.1;
-        }
-        .label-container {
-            border: none;
-            padding: 0;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-        }
-        .qr-container {
-            width: 18mm;
-            height: 18mm;
-            border: 1px solid #ccc;
-            padding: 0.5mm;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            margin: 0 auto 2mm auto;
-        }
-        .qr-container img {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-            image-rendering: crisp-edges;
-        }
-        .page-break {
-            page-break-after: always;
-            break-after: page;
-        }
+        @page { size: 100mm 150mm; margin: 0; }
+        body { width: 100mm; padding: 6mm; font-family: 'Helvetica', Arial, sans-serif; color: #000; line-height: 1.2; }
+        
+        /* HEADER: QR OPTIMIZADO A 26mm PARA LECTURA SEGURA */
+        .header-container { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #000; padding-bottom: 12px; margin-bottom: 15px; }
+        .header-qr { width: 26mm; height: 26mm; flex-shrink: 0; }
+        .info-header { text-align: right; text-transform: uppercase; margin-left: 10px; }
+        .label-xs { font-size: 10px; color: #666; font-weight: bold; }
+        .val-orden { font-size: 17px; font-weight: bold; margin-bottom: 4px; }
+        .val-pedido { font-size: 28px; font-weight: 900; line-height: 1; }
+
+        .destino-box { background: #f2f2f2; padding: 10px; border-left: 6px solid #000; margin-bottom: 15px; }
+        .destino-box .val { font-size: 20px; font-weight: bold; text-transform: uppercase; }
+
+        .item-row { border-bottom: 1px solid #ccc; padding: 10px 0; }
+        .desc-main { font-size: 14px; font-weight: bold; display: block; text-transform: uppercase; }
+        .desc-sub { font-size: 10px; color: #444; font-family: monospace; }
+        .cant-val { font-size: 20px; font-weight: bold; text-align: right; vertical-align: middle; }
+
+        .total-card { background: #000; color: #fff; padding: 12px; margin-top: 15px; text-align: center; border-radius: 2px; }
+        .total-num { font-size: 28px; font-weight: bold; }
+
+        .footer { text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee; }
+        .brand-name { font-size: 13px; font-weight: 900; }
+        .brand-id { font-size: 10px; color: #888; font-family: monospace; }
     ` : `
-        @page { 
-            size: A4; 
-            margin: 12mm; 
-        }
-        body { 
-            margin: 0;
-            padding: 0;
-            font-family: 'Courier New', monospace;
-            font-size: 10px;
-            line-height: 1.2;
-        }
-        .label-container {
-            border: none;
-            padding: 0;
-            max-width: 100%;
-        }
-        .qr-container {
-            width: 50px;
-            height: 50px;
-            border: 1px solid #ccc;
-            padding: 1px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-        .qr-container img {
-            max-width: 100%;
-            max-height: 100%;
-            width: auto;
-            height: auto;
-        }
-        .page-break {
-            page-break-after: always;
-            break-after: page;
-            margin-top: 20mm;
-        }
-        .header-section {
-            display: flex;
-            justify-content: space-between;
-            align-items: flex-start;
-            margin-bottom: 5mm;
-            border-bottom: 1px solid #000;
-            padding-bottom: 3mm;
-        }
+        @page { size: A4; margin: 15mm; }
+        body { font-family: 'Helvetica', Arial, sans-serif; color: #333; line-height: 1.5; }
+        .header-container { display: flex; justify-content: space-between; align-items: center; border-bottom: 4px solid #000; padding-bottom: 20px; margin-bottom: 30px; }
+        .header-qr { width: 35mm; height: 35mm; }
+        .info-principal { text-align: right; }
+        .label-mini { font-size: 12px; color: #666; font-weight: bold; text-transform: uppercase; }
+        .val-orden { font-size: 28px; font-weight: bold; color: #000; margin-bottom: 5px; }
+        .val-pedido { font-size: 45px; font-weight: 900; color: #000; line-height: 1; }
+        .destino-box { background: #f2f2f2; padding: 20px; border-left: 8px solid #000; margin-bottom: 30px; }
+        .destino-box .val { font-size: 32px; font-weight: bold; text-transform: uppercase; }
+        table { width: 100%; border-collapse: collapse; margin-bottom: 30px; }
+        th { background: #000; color: #fff; text-align: left; padding: 12px; font-size: 14px; text-transform: uppercase; }
+        td { padding: 15px 12px; border-bottom: 1px solid #ddd; font-size: 16px; }
+        .col-cant { text-align: right; font-weight: bold; font-size: 24px; }
+        .sku-txt { font-size: 12px; color: #666; font-family: monospace; }
+        .desc-txt { font-weight: bold; font-size: 20px; display: block; margin: 4px 0; }
+        .pie-pagina { display: flex; justify-content: space-between; align-items: flex-end; margin-top: 50px; border-top: 1px solid #eee; padding-top: 25px; }
+        .total-card { background: #000; color: #fff; padding: 15px 35px; border-radius: 4px; display: inline-block; text-align: right; }
+        .total-num { font-size: 40px; font-weight: bold; }
+        .brand-name { font-size: 24px; font-weight: 900; }
+        .brand-id { font-size: 12px; color: #888; font-family: monospace; }
     `;
 
-    // Generar la fecha en formato día/mes/año
-    const fechaActual = new Date();
-    const fechaFormateada = fechaActual.toLocaleDateString('es-ES', {
-        day: 'numeric',
-        month: 'numeric',
-        year: 'numeric'
-    });
-
-    // Función para generar el encabezado de cada página
-    function generarEncabezadoPagina(numeroPagina, totalPaginas) {
-        const qrHTML = tieneQR ? `
-            <div class="qr-container">
-                <img src="${qrUrl}" alt="QR Code" style="width: 100%; height: 100%;">
-            </div>
-        ` : '';
-        
-        return esA4 ? `
-            <div class="header-section">
-                <div style="flex: 1;">
-                    <div style="font-size: 24px; font-weight: bold; margin-bottom: 2px;">
-                        ORDEN: ${data.ordenNumero}
-                    </div>
-                    <div style="font-size: 18px; font-weight: bold; margin-bottom: 8px;">
-                        N de Pedido: ${data.codigo}
-                    </div>
-                    <div style="font-size: 12px; font-weight: bold; margin-bottom: 2px;">
-                        DESTINO:
-                    </div>
-                    <div style="font-size: 14px; font-weight: bold; text-transform: uppercase;">
-                        ${data.destino}
-                    </div>
-                    ${totalPaginas > 1 ? `<div style="font-size: 8px; margin-top: 4px; color: #666;">Página ${numeroPagina} de ${totalPaginas}</div>` : ''}
-                </div>
-                ${qrHTML}
-            </div>
-        ` : `
-            <div style="text-align: center; margin-bottom: 4mm;">
-                <div style="font-size: 20px; font-weight: bold; margin-bottom: 1mm;">
-                    ORDEN: ${data.ordenNumero}
-                </div>
-                <div style="font-size: 16px; font-weight: bold; margin-bottom: 2mm;">
-                    N de Pedido: ${data.codigo}
-                </div>
-                <div style="font-size: 10px; font-weight: bold; margin-bottom: 1mm;">
-                    DESTINO:
-                </div>
-                <div style="font-size: 11px; font-weight: bold; text-transform: uppercase; margin-bottom: 2mm;">
-                    ${data.destino}
-                </div>
-                ${qrHTML}
-                ${totalPaginas > 1 ? `<div style="font-size: 6px; margin-top: 1mm; color: #666;">Página ${numeroPagina} de ${totalPaginas}</div>` : ''}
-            </div>
-        `;
-    }
-
-    // Función para generar materiales de una página
-    function generarMaterialesPagina(materiales) {
-        let materialsHTML = '';
-        
-        materiales.forEach((item, index) => {
-            // Para etiqueta térmica, diseño más compacto
-            if (esTermica) {
-                materialsHTML += `
-                    <div style="margin-bottom: 3mm; padding-bottom: 2mm; ${index < materiales.length - 1 ? 'border-bottom: 0.5px solid #999;' : ''}">
-                        <div style="font-weight: bold; font-size: 9px; margin-bottom: 1mm;">
-                            CANTIDADES: ${item.cantidad.toFixed(1)} BLS
-                        </div>
-                        <div style="font-size: 8px; margin-bottom: 0.5mm;">
-                            <strong>SKU:</strong> ${item.sku}
-                        </div>
-                        <div style="font-size: 8px; font-weight: bold; margin-bottom: 0.5mm;">
-                            ${item.descripcion}
-                        </div>
-                        <div style="font-size: 8px; margin-bottom: 0.5mm;">
-                            <strong>LOTE:</strong> ${item.lote} -
-                        </div>
-                        <div style="font-size: 8px; margin-bottom: 0.5mm;">
-                            <strong>SOL.:</strong> ${item.solicitante}
-                        </div>
-                        <div style="font-size: 8px; margin-bottom: 0.5mm;">
-                            <strong>BANDERA -</strong> ${item.bandera || 'SIN CÓDIGO'}
-                        </div>
-                    </div>
-                `;
-            } else {
-                // Para A4, diseño más espaciado
-                materialsHTML += `
-                    <div style="margin-bottom: 4mm; padding-bottom: 3mm; ${index < materiales.length - 1 ? 'border-bottom: 1px dashed #999;' : ''}">
-                        <div style="font-weight: bold; font-size: 11px; margin-bottom: 1mm;">
-                            CANTIDADES: ${item.cantidad.toFixed(1)} BLS
-                        </div>
-                        <div style="font-size: 10px; margin-bottom: 1mm;">
-                            <strong>SKU:</strong> ${item.sku}
-                        </div>
-                        <div style="font-size: 10px; font-weight: bold; margin-bottom: 1mm;">
-                            ${item.descripcion}
-                        </div>
-                        <div style="font-size: 10px; margin-bottom: 1mm;">
-                            <strong>LOTE:</strong> ${item.lote} -
-                        </div>
-                        <div style="font-size: 10px; margin-bottom: 1mm;">
-                            <strong>SOL.:</strong> ${item.solicitante}
-                        </div>
-                        <div style="font-size: 10px; margin-bottom: 1mm;">
-                            <strong>BANDERA -</strong> ${item.bandera || 'SIN CÓDIGO'}
-                        </div>
-                    </div>
-                `;
-            }
+    let cuerpoHTML = '';
+    if (esTermica) {
+        data.materiales.forEach(item => {
+            cuerpoHTML += `
+                <div class="item-row">
+                    <table style="width:100%">
+                        <tr>
+                            <td>
+                                <span class="desc-main">${item.descripcion.toUpperCase()}</span>
+                                <span class="desc-sub">SKU: ${item.sku} | LOTE: ${item.lote}</span><br>
+                                <span class="desc-sub">SOL.: ${item.solicitante}</span>
+                            </td>
+                            <td class="cant-val">${parseFloat(item.cantidad).toFixed(1)}</td>
+                        </tr>
+                    </table>
+                </div>`;
         });
-        
-        return materialsHTML;
+    } else {
+        cuerpoHTML = `
+            <table>
+                <thead>
+                    <tr><th>Detalle del Material</th><th style="text-align:right;">Cant.</th></tr>
+                </thead>
+                <tbody>
+                    ${data.materiales.map(item => `
+                        <tr>
+                            <td>
+                                <span class="sku-txt">SKU: ${item.sku} | LOTE: ${item.lote}</span>
+                                <span class="desc-txt">${item.descripcion.toUpperCase()}</span>
+                                <span class="sku-txt">SOLICITANTE: ${item.solicitante}</span>
+                            </td>
+                            <td class="col-cant">${parseFloat(item.cantidad).toFixed(1)} <small style="font-size:14px">BLS</small></td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>`;
     }
 
-    // Función para generar el pie de página
-    function generarPiePagina(esUltimaPagina) {
-        const totalGeneral = esUltimaPagina ? `
-            <div style="text-align: center; margin: ${esTermica ? '3mm 0' : '5mm 0'}; padding: ${esTermica ? '2mm' : '3mm'}; border: ${esA4 ? '1px solid #000' : 'none'};">
-                <div style="font-size: ${esTermica ? '11px' : '14px'}; font-weight: bold; margin-bottom: ${esTermica ? '1mm' : '2mm'};">
-                    TOTAL GENERAL DE BOLSAS:
-                </div>
-                <div style="font-size: ${esTermica ? '14px' : '18px'}; font-weight: bold;">
-                    ${data.cantidadTotal.toFixed(1)} BLS
-                </div>
+    const content = esTermica ? `
+        <div class="header-container">
+            <img src="${data.qrImageUrl}" class="header-qr">
+            <div class="info-header">
+                <div class="label-xs">Orden</div>
+                <div class="val-orden"># ${data.ordenNumero}</div>
+                <div class="label-xs">N° Pedido</div>
+                <div class="val-pedido">${data.codigo}</div>
             </div>
-        ` : '';
-        
-        const fechaYCodigo = esUltimaPagina ? `
-            <div style="font-size: ${esTermica ? '7px' : '9px'}; text-align: center; margin-top: ${esTermica ? '1mm' : '2mm'};">
-                Código: ${data.verificationCode} | ${fechaFormateada}
+        </div>
+        <div class="destino-box">
+            <div class="label-xs">Destino</div>
+            <div class="val">${data.destino.toUpperCase()}</div>
+        </div>
+        ${cuerpoHTML}
+        <div class="total-card">
+            <div style="font-size: 10px; text-transform: uppercase; margin-bottom:2px;">Total General</div>
+            <div class="total-num">${parseFloat(data.cantidadTotal).toFixed(1)} BLS</div>
+        </div>
+        <div class="footer">
+            <div class="brand-name">AGROQUIMICOS DEL NORTE S.A.</div>
+            <div class="brand-id">ID: ${data.verificationCode}</div>
+        </div>
+    ` : `
+        <div class="header-container">
+            <img src="${data.qrImageUrl}" class="header-qr">
+            <div class="info-principal">
+                <div class="label-mini">Orden de Carga</div>
+                <div class="val-orden"># ${data.ordenNumero}</div>
+                <div class="label-mini">Número de Pedido</div>
+                <div class="val-pedido">${data.codigo}</div>
             </div>
-        ` : '';
-        
-        return `
-            ${totalGeneral}
-            <div style="text-align: center; margin-top: ${esTermica ? '3mm' : '5mm'}; padding-top: ${esTermica ? '2mm' : '3mm'}; border-top: 1px solid #000;">
-                <div style="font-weight: bold; font-size: ${esTermica ? '10px' : '12px'}; margin-bottom: ${esTermica ? '1mm' : '2mm'};">
-                    AGROQUIMICOS DEL NORTE S.A.
-                </div>
-                ${fechaYCodigo}
+        </div>
+        <div class="destino-box">
+            <div class="label-mini">Destino del Material</div>
+            <div class="val">${data.destino.toUpperCase()}</div>
+        </div>
+        ${cuerpoHTML}
+        <div class="pie-pagina">
+            <div class="brand-box">
+                <div class="brand-name">AGROQUIMICOS DEL NORTE S.A.</div>
+                <div class="brand-id">ID VERIFICACIÓN: ${data.verificationCode}</div>
             </div>
-        `;
-    }
+            <div class="total-card">
+                <span style="font-size:14px; text-transform:uppercase; display:block; opacity:0.8;">Total General</span>
+                <span class="total-num">${parseFloat(data.cantidadTotal).toFixed(1)} <small style="font-size:18px">BLS</small></span>
+            </div>
+        </div>
+    `;
 
-    // Construir el contenido HTML con múltiples páginas si es necesario
-    let contenidoHTML = '';
-    
-    paginasDeMateriales.forEach((materialesPagina, index) => {
-        const esUltimaPagina = (index === paginasDeMateriales.length - 1);
-        const numeroPagina = index + 1;
-        const totalPaginas = paginasDeMateriales.length;
-        
-        contenidoHTML += `
-            <div class="${esA4 ? 'page' : ''}" style="${esA4 ? 'min-height: 270mm; padding: 12mm;' : ''}">
-                ${generarEncabezadoPagina(numeroPagina, totalPaginas)}
-                ${generarMaterialesPagina(materialesPagina)}
-                ${esUltimaPagina ? generarPiePagina(true) : generarPiePagina(false)}
-            </div>
-            ${!esUltimaPagina ? '<div class="page-break"></div>' : ''}
-        `;
-    });
-
-    printWindow.document.write(`
-        <html>
-        <head>
-            <title>Etiqueta ${data.ordenNumero}</title>
-            <style>
-                ${styles}
-                
-                /* Estilos comunes para impresión */
-                * {
-                    margin: 0;
-                    padding: 0;
-                    box-sizing: border-box;
-                }
-                
-                body {
-                    -webkit-print-color-adjust: exact;
-                    print-color-adjust: exact;
-                }
-                
-                @media print {
-                    .page-break {
-                        page-break-after: always;
-                        break-after: page;
-                    }
-                    .no-print {
-                        display: none !important;
-                    }
-                }
-                
-                /* Para A4: asegurar que cada página ocupe una hoja completa */
-                .page {
-                    page-break-inside: avoid;
-                    break-inside: avoid;
-                }
-            </style>
-        </head>
-        <body>
-            <div class="label-container">
-                ${contenidoHTML}
-            </div>
-            
-            <script>
-                window.onload = function() {
-                    // Esperar a que carguen las imágenes (especialmente el QR)
-                    setTimeout(function() {
-                        window.print();
-                        // Cerrar después de imprimir
-                        setTimeout(function() {
-                            window.close();
-                        }, 1000);
-                    }, ${tieneQR ? '300' : '150'});
-                };
-                
-                // También permitir imprimir con Ctrl+P
-                document.addEventListener('keydown', function(e) {
-                    if (e.ctrlKey && e.key === 'p') {
-                        e.preventDefault();
-                        window.print();
-                    }
-                });
-            </script>
-        </body>
-        </html>
-    `);
-    
+    printWindow.document.write(`<html><head><title>Impresión</title><style>${styles}</style></head><body>${content}</body></html>`);
     printWindow.document.close();
+    setTimeout(() => { printWindow.print(); printWindow.close(); }, 500);
 }

@@ -5,7 +5,7 @@ window.qrImageUrl = null;
 window.currentWebPageUrl = null; 
 
 // TU NUEVA URL DE GOOGLE APPS SCRIPT
-window.googleDriveWebAppUrl = "https://script.google.com/macros/s/AKfycbxE9aDhPs99lqTQ7z1_bRub-UOVZI3ITJ0te3ekKMhzEtrSuUa1p_kjH4u3GthGRNFZ/exec";
+window.googleDriveWebAppUrl = "https://script.google.com/macros/s/AKfycbwmeHuBdcC-DaEHyoEXkATGi-6nze0v22v9S6hvVe8K2GgmZY7icFCdtHq6h4YXWkfd/exec";
 
 window.generateVerificationCode = function(ordenNumero) {
     const timestamp = Date.now().toString().slice(-6);

@@ -1,5 +1,8 @@
-// google-drive-simple.js - VERSIÓN CORREGIDA
-const GOOGLE_DRIVE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbxE9aDhPs99lqTQ7z1_bRub-UOVZI3ITJ0te3ekKMhzEtrSuUa1p_kjH4u3GthGRNFZ/exec";
+/**
+ * google-drive-simple.js - VERSIÓN OPTIMIZADA PARA API
+ */
+
+const GOOGLE_DRIVE_WEB_APP_URL = "https://script.google.com/macros/s/AKfycbwmeHuBdcC-DaEHyoEXkATGi-6nze0v22v9S6hvVe8K2GgmZY7icFCdtHq6h4YXWkfd/exec";
 
 async function createWebPage() {
     if (!window.currentLabelData) {
@@ -7,35 +10,31 @@ async function createWebPage() {
         return;
     }
 
-    const loading = showLoading('Generando página de consulta...');
+    const loading = showLoading('Sincronizando con base de datos...');
     
     try {
-        // Armamos el paquete de datos
         const payload = {
             action: "createWebPage",
-            // Forzamos el nombre de la empresa en mayúsculas para el backend si es necesario
             empresa: "AGROQUIMICOS DEL NORTE S.A.",
             ordenNumero: window.currentLabelData.ordenNumero,
             codigo: window.currentLabelData.codigo,
             destino: window.currentLabelData.destino,
             totalBolsas: window.currentLabelData.cantidadTotal,
             verificationCode: window.currentLabelData.verificationCode,
-            htmlContent: generateWebPageHTML() 
+            // Solo enviamos las FILAS de la tabla, no la página entera
+            htmlContent: generateWebPageRowsHTML() 
         };
 
-        // Enviar datos al script de Google
         await fetch(GOOGLE_DRIVE_WEB_APP_URL, {
             method: 'POST',
             mode: 'no-cors', 
             body: JSON.stringify(payload)
         });
 
-        // Generamos el link de visualización
         const viewLink = `${GOOGLE_DRIVE_WEB_APP_URL}?v=${window.currentLabelData.verificationCode}`;
         window.currentWebPageUrl = viewLink;
         window.currentLabelData.driveLink = viewLink;
 
-        // Actualizamos el QR físico para que apunte a la nueva web
         if (typeof window.generateQRCode === 'function') {
             await window.generateQRCode(
                 window.currentLabelData.ordenNumero, 
@@ -49,54 +48,65 @@ async function createWebPage() {
 
     } catch (error) {
         hideLoading(loading);
-        console.error("Error en createWebPage:", error);
+        console.error("Error:", error);
         alert('❌ Error: ' + error.message);
     }
 }
 
 /**
- * Genera el cuerpo de la tabla para la web
- * Se corrigió: Nombre en mayúsculas y agregado de Solicitante (SOL.)
+ * Genera ÚNICAMENTE las filas de materiales para insertar en la tabla de la API
  */
-function generateWebPageHTML() {
-    if (!window.currentLabelData || !window.currentLabelData.materiales) return '';
+/**
+ * Genera ÚNICAMENTE las filas de materiales para insertar en la tabla de la API
+ * Se eliminó el color naranja/rojo del solicitante para un look más sobrio.
+ */
+/**
+ * Genera ÚNICAMENTE las filas de materiales con el orden solicitado:
+ * SKU -> DESCRIPCIÓN -> LOTE -> SOLICITANTE -> BANDERA
+ */
+function generateWebPageRowsHTML() {
+    const data = window.currentLabelData;
+    let html = '';
     
-    // Encabezado con el nombre de la empresa corregido
-    let html = `
-        <tr>
-            <td colspan="2" style="background-color: #2c3e50; color: white; text-align: center; padding: 15px; font-weight: bold; font-size: 1.2rem;">
-                AGROQUIMICOS DEL NORTE S.A.
-            </td>
-        </tr>
-    `;
-
-    window.currentLabelData.materiales.forEach(item => {
+    data.materiales.forEach(item => {
         html += `
         <tr>
-            <td style="padding: 12px; border-bottom: 1px solid #eee;">
-                <div style="font-weight: bold; font-size: 1.1rem; color: #2c3e50; margin-bottom: 4px;">
-                    ${item.descripcion.toUpperCase()}
+            <td style="padding: 15px 12px; border-bottom: 1px solid #eee; line-height: 1.4;">
+                <div style="color: #7f8c8d; font-size: 0.8rem; font-weight: bold; font-family: monospace;">
+                    SKU: ${item.sku}
                 </div>
-                <div style="font-size: 0.85rem; color: #666; display: flex; flex-wrap: wrap; gap: 8px;">
-                    <span style="background: #f0f2f5; padding: 2px 6px; border-radius: 4px;">SKU: ${item.sku}</span>
-                    <span style="background: #f0f2f5; padding: 2px 6px; border-radius: 4px;">LOTE: ${item.lote}</span>
-                    <span style="background: #e3f2fd; color: #1565c0; padding: 2px 6px; border-radius: 4px; font-weight: bold; border: 1px solid #bbdefb;">
-                        SOL.: ${item.solicitante || 'NO ESPECIFICADO'}
-                    </span>
+                
+                <div style="font-weight: 800; font-size: 1.1rem; color: #000; margin: 2px 0; text-transform: uppercase;">
+                    ${item.descripcion}
+                </div>
+                
+                <div style="font-size: 0.9rem; color: #444;">
+                    LOTE: ${item.lote} -
+                </div>
+                
+                <div style="font-size: 0.85rem; color: #555; font-weight: bold; margin-top: 4px;">
+                    SOL.: ${item.solicitante || '---'}
+                </div>
+                
+                <div style="font-size: 0.85rem; color: #555; font-weight: bold;">
+                    BANDERA - ${item.bandera || '---'}
                 </div>
             </td>
-            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-weight: bold; color: #2c3e50; white-space: nowrap;">
-                ${parseFloat(item.cantidad).toFixed(1)} BLS
+            
+            <td style="padding: 12px; border-bottom: 1px solid #eee; text-align: right; font-weight: 900; width: 90px; background: #f8f9fa; border-left: 1px solid #ddd; color: #000; font-size: 1.4rem; vertical-align: middle;">
+                ${parseFloat(item.cantidad).toFixed(1)}
+                <div style="font-size: 0.6rem; font-weight: bold; color: #666;">BLS</div>
             </td>
         </tr>`;
     });
+
     return html;
 }
 
 function showLoading(msg) {
     const div = document.createElement('div');
     div.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:rgba(0,0,0,0.85); color:white; display:flex; flex-direction:column; align-items:center; justify-content:center; z-index:10000; font-family:Arial;";
-    div.innerHTML = `<div style="border:5px solid #f3f3f3; border-top:5px solid #3498db; border-radius:50%; width:40px; height:40px; animation:spin 1s linear infinite;"></div><p style="margin-top:20px;">${msg}</p><style>@keyframes spin{0%{transform:rotate(0deg)}100%{transform:rotate(360deg)}}</style>`;
+    div.innerHTML = `<div class="spinner"></div><p style="margin-top:20px;">${msg}</p><style>.spinner{border:4px solid #f3f3f3; border-top:4px solid #3498db; border-radius:50%; width:30px; height:30px; animation:spin 1s linear infinite;} @keyframes spin{0%{transform:rotate(0deg)} 100%{transform:rotate(360deg)}}</style>`;
     document.body.appendChild(div);
     return div;
 }
@@ -105,5 +115,5 @@ function hideLoading(el) { if(el) el.remove(); }
 
 document.addEventListener('DOMContentLoaded', function() {
     const btn = document.getElementById('createWebPageBtn') || document.getElementById('uploadToDriveBtn');
-    if (btn) btn.addEventListener('click', createWebPage);
+    if (btn) btn.onclick = createWebPage;
 });
