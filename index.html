@@ -6,7 +6,6 @@
     <title>Sistema de Etiquetas - Modelo Orden</title>
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     <link rel="stylesheet" href="css/style.css">
-    <!-- Librerías para QR -->
     <script src="https://cdn.jsdelivr.net/npm/qrcode-generator@1.4.4/qrcode.min.js"></script>
 </head>
 <body>
@@ -25,7 +24,6 @@
             </button>
         </div>
         
-        <!-- Pestaña 1: Crear Etiqueta -->
         <div class="tab-content active" id="tab-1">
             <div class="app-container">
                 <section class="form-section">
@@ -73,14 +71,9 @@
                                     <input type="number" id="cantidad" step="0.1" min="0" placeholder="Ej: 6.0">
                                 </div>
                                 
-                                <div class="form-group">
+                                <div class="form-group full-width">
                                     <label for="solicitante">Solicitante</label>
                                     <input type="text" id="solicitante" placeholder="Ej: STEFANUTTI RAMIRO E.">
-                                </div>
-                                
-                                <div class="form-group">
-                                    <label for="bandera">Código Bandera</label>
-                                    <input type="text" id="bandera" placeholder="Ej: 1813656">
                                 </div>
                             </div>
                             
@@ -94,7 +87,6 @@
                                 <div class="empty-materials">No hay materiales agregados. Agrega materiales usando el formulario superior.</div>
                             </div>
                             
-                            <!-- Resumen de total de bolsas -->
                             <div class="label-total-container" id="formTotalContainer" style="display: none; margin-top: 15px;">
                                 <div class="label-total-title">TOTAL DE BOLSAS EN ESTA ORDEN:</div>
                                 <div class="label-total-value" id="formTotalValue">0.0 BLS</div>
@@ -117,15 +109,12 @@
                     
                     <div class="label-preview-container">
                         <div class="label-preview" id="labelPreview">
-                            <!-- Encabezado con QR al lado -->
                             <div class="label-header">
                                 <div class="label-header-top">
-                                    <!-- QR Code -->
                                     <div class="label-qr-container">
                                         <div id="labelQR"></div>
                                     </div>
                                     
-                                    <!-- Información de la orden -->
                                     <div class="label-header-info">
                                         <div class="label-orden">ORDEN:</div>
                                         <div class="label-orden-numero" id="previewOrdenNumero">001</div>
@@ -139,66 +128,51 @@
                             <div class="label-separator"></div>
                             
                             <div class="label-content" id="previewMaterials">
-                                <!-- Los materiales se mostrarán aquí -->
                                 <div class="label-item">
                                     <div class="label-item-header">
                                         <div class="label-cantidad">CANTIDADES:</div>
                                         <div class="label-cantidad-total" id="previewCantidadTotal">0.0 BLS</div>
                                     </div>
-                                    
                                     <div class="label-sku">SKU: 30116095</div>
                                     <div class="label-descripcion">C DK DK72-20RR2 R5 80M TB AR</div>
-                                    <div class="label-lote">LOTE: YE1091092 -</div>
+                                    <div class="label-lote">LOTE: YE1091092</div>
                                     <div class="label-sol">SOL.: STEFANUTTI RAMIRO E.</div>
-                                    <div class="label-bandera">BANDERA - 829317064</div>
                                 </div>
                             </div>
                             
-                            <!-- Resumen total de bolsas -->
                             <div class="label-total-container" id="previewTotalContainer">
                                 <div class="label-total-title">TOTAL GENERAL DE BOLSAS:</div>
                                 <div class="label-total-value" id="previewTotalValue">0.0 BLS</div>
                             </div>
                             
                             <div class="label-separator"></div>
-                            
-                            <!-- Pie de la etiqueta actualizado -->
                             <div class="label-footer" id="previewLogistica">AGROQUIMICOS DEL NORTE S.A.</div>
                         </div>
                     </div>
                     
                     <div class="buttons">
-    <button id="printSingleBtn" class="btn btn-print" disabled title="Imprimir en hoja A4">
-        <i class="fas fa-file-pdf"></i> Imprimir A4
-    </button>
-    
-    <button id="printThermalBtn" class="btn btn-print" disabled style="background-color: #e67e22;" title="Imprimir Etiqueta Térmica 10x15">
-        <i class="fas fa-print"></i> Imprimir Térmica (10x15)
-    </button>
-
-    <button id="createWebPageBtn" class="btn btn-drive" disabled>
-        <i class="fab fa-google-drive"></i> Crear Página Web
-    </button>
-    <button id="saveBtn" class="btn" disabled>
-        <i class="fas fa-save"></i> Guardar
-    </button>
-</div>
-                    
-                    <div style="margin-top: 15px; text-align: center; color: #666; font-size: 0.9rem;">
-                        <i class="fas fa-qrcode"></i> El QR contiene la información de la etiqueta y enlace a la página web
+                        <button id="printSingleBtn" class="btn btn-print" disabled title="Imprimir en hoja A4">
+                            <i class="fas fa-file-pdf"></i> Imprimir A4
+                        </button>
+                        <button id="printThermalBtn" class="btn btn-print" disabled style="background-color: #e67e22;" title="Imprimir Etiqueta Térmica 10x15">
+                            <i class="fas fa-print"></i> Imprimir Térmica (10x15)
+                        </button>
+                        <button id="createWebPageBtn" class="btn btn-drive" disabled>
+                            <i class="fab fa-google-drive"></i> Crear Página Web
+                        </button>
+                        <button id="saveBtn" class="btn" disabled>
+                            <i class="fas fa-save"></i> Guardar
+                        </button>
                     </div>
                 </section>
             </div>
         </div>
         
-        <!-- Pestaña 2: Historial -->
         <div class="tab-content" id="tab-2">
             <h2 class="section-title"><i class="fas fa-history"></i> Historial de Etiquetas</h2>
-            
             <div class="history-list" id="historyList">
-                <div class="empty-history">No hay etiquetas en el historial. Genera una etiqueta para verla aquí.</div>
+                <div class="empty-history">No hay etiquetas en el historial.</div>
             </div>
-            
             <div class="buttons" style="margin-top: 20px;">
                 <button id="clearHistoryBtn" class="btn btn-secondary">
                     <i class="fas fa-trash-alt"></i> Limpiar Historial
@@ -210,14 +184,13 @@
         </div>
     </div>
 
-<!-- Scripts -->
-<script src="js/config.js"></script>
-<script src="js/main.js"></script>
-<script src="js/form-handler.js"></script>
-<script src="js/label-generator.js"></script>
-<script src="js/qr-generator.js"></script>
-<script src="js/print-functions.js"></script>
-<script src="js/history-manager.js"></script>
-<script src="js/google-drive-simple.js"></script>
+    <script src="js/config.js"></script>
+    <script src="js/main.js"></script>
+    <script src="js/form-handler.js"></script>
+    <script src="js/label-generator.js"></script>
+    <script src="js/qr-generator.js"></script>
+    <script src="js/print-functions.js"></script>
+    <script src="js/history-manager.js"></script>
+    <script src="js/google-drive-simple.js"></script>
 </body>
 </html>

@@ -1,3 +1,5 @@
+// label-generator.js - VERSIÓN CORREGIDA SIN CAMPO BANDERA
+
 // REFERENCIAS A ELEMENTOS DE VISTA PREVIA
 let previewOrdenNumero, previewCodigo, previewDestino, previewMaterials, previewTotalValue, previewLogistica;
 
@@ -32,75 +34,40 @@ async function generateLabel() {
     const codigo = document.getElementById('codigo') ? document.getElementById('codigo').value.trim() : '';
     const destino = document.getElementById('destino') ? document.getElementById('destino').value.trim() : '';
     
-    console.log('Datos obtenidos:', { ordenNumero, codigo, destino });
-    
-    if (!ordenNumero || !codigo || !destino) {
-        alert('Por favor complete los datos de la orden');
-        return;
-    }
-    
     if (orderMaterials.length === 0) {
-        alert('Por favor agregue al menos un material a la orden');
+        alert('❌ Debe agregar al menos un material a la orden');
         return;
     }
-    
-    // 1. Actualizar vista previa
-    updateLabelPreview(ordenNumero, codigo, destino);
-    
-    // 2. Generar QR (si la función está disponible)
-    if (typeof window.generateQRCode === 'function') {
-        console.log('Generando QR...');
-        window.generateQRCode(ordenNumero, codigo, destino);
-    }
-    
-    // 3. Habilitar botones
-    if (typeof window.enableActionButtons === 'function') {
-        window.enableActionButtons();
-    }
-    
-    console.log('Etiqueta generada correctamente');
-}
 
-// ACTUALIZAR VISTA PREVIA DE LA ETIQUETA
-function updateLabelPreview(ordenNumero, codigo, destino) {
-    console.log('Actualizando vista previa...');
+    // Actualizar encabezados de vista previa
+    if (previewOrdenNumero) previewOrdenNumero.textContent = `# ${ordenNumero}`;
+    if (previewCodigo) previewCodigo.textContent = `N° Pedido: ${codigo}`;
+    if (previewDestino) previewDestino.textContent = destino.toUpperCase();
     
-    if (!previewOrdenNumero || !previewCodigo || !previewDestino || !previewMaterials || !previewTotalValue || !previewLogistica) {
-        console.error('Faltan elementos de vista previa');
-        return;
-    }
+    // Calcular total
+    let cantidadTotal = 0;
+    orderMaterials.forEach(item => {
+        cantidadTotal += parseFloat(item.cantidad);
+    });
     
-    // Actualizar datos generales
-    previewOrdenNumero.textContent = ordenNumero;
-    previewCodigo.textContent = `N de Pedido: ${codigo}`;
-    previewDestino.textContent = destino.toUpperCase();
+    if (previewTotalValue) previewTotalValue.textContent = `${cantidadTotal.toFixed(1)} BLS`;
+
+    // Generar código QR inicial (provisional antes de Drive)
+    const qrImageUrl = await window.generateQRCode(ordenNumero, codigo, destino);
     
-    // Calcular cantidad total
-    const cantidadTotal = orderMaterials.reduce((sum, item) => sum + item.cantidad, 0);
-    
-    // Actualizar total en vista previa
-    const previewCantidadTotal = document.getElementById('previewCantidadTotal');
-    if (previewCantidadTotal) {
-        previewCantidadTotal.textContent = `${cantidadTotal.toFixed(1)} BLS`;
-    }
-    previewTotalValue.textContent = `${cantidadTotal.toFixed(1)} BLS`;
-    
-    // Generar HTML para los materiales
+    // Generar HTML de materiales para la vista previa (SIN BANDERA)
     let materialsHTML = '';
-    
-    orderMaterials.forEach((item, index) => {
+    orderMaterials.forEach(item => {
         materialsHTML += `
-            <div class="label-item" ${index < orderMaterials.length - 1 ? 'style="margin-bottom: 15px; padding-bottom: 12px; border-bottom: 1px dashed #999;"' : ''}>
+            <div class="label-item">
                 <div class="label-item-header">
                     <div class="label-cantidad">CANTIDADES:</div>
-                    <div class="label-cantidad-total">${item.cantidad.toFixed(1)} BLS</div>
+                    <div class="label-cantidad-total">${parseFloat(item.cantidad).toFixed(1)} BLS</div>
                 </div>
                 
-                <div class="label-sku">SKU: ${item.sku}</div>
-                <div class="label-descripcion">${item.descripcion}</div>
-                <div class="label-lote">LOTE: ${item.lote} -</div>
-                <div class="label-sol">SOL.: ${item.solicitante}</div>
-                <div class="label-bandera">BANDERA - ${item.bandera || 'SIN CÓDIGO'}</div>
+                <div class="label-sku" style="font-weight: bold; font-family: monospace;">SKU: ${item.sku} | LOTE: ${item.lote}</div>
+                <div class="label-descripcion" style="font-size: 1.1rem; font-weight: 900; margin: 3px 0;">${item.descripcion.toUpperCase()}</div>
+                <div class="label-sol" style="font-style: italic; color: #444;">SOLICITANTE: ${item.solicitante}</div>
             </div>
         `;
     });
@@ -108,16 +75,18 @@ function updateLabelPreview(ordenNumero, codigo, destino) {
     previewMaterials.innerHTML = materialsHTML;
     
     // Generar código de verificación
-    const verificationCode = window.generateVerificationCode ? window.generateVerificationCode(ordenNumero) : 'VER-00000000';
+    const verificationCode = window.generateVerificationCode ? window.generateVerificationCode(ordenNumero) : 'AGN-000000';
     
     // Pie de la etiqueta
-    previewLogistica.innerHTML = `
-        AGROQUIMICOS DEL NORTE S.A.<br>
-        <small style="font-size: 10px;">Código: ${verificationCode} | ${new Date().toLocaleDateString('es-ES')}</small>
-    `;
+    if (previewLogistica) {
+        previewLogistica.innerHTML = `
+            <strong>AGROQUIMICOS DEL NORTE S.A.</strong><br>
+            <small style="font-size: 10px;">ID: ${verificationCode} | FECHA: ${new Date().toLocaleDateString()}</small>
+        `;
+    }
     
-    // Guardar datos actuales
-    currentLabelData = {
+    // Guardar datos en el objeto global para impresión
+    window.currentLabelData = {
         ordenNumero,
         codigo,
         destino,
@@ -128,9 +97,13 @@ function updateLabelPreview(ordenNumero, codigo, destino) {
         qrImageUrl: qrImageUrl
     };
     
-    console.log('Datos de etiqueta guardados:', { 
-        orden: ordenNumero, 
-        materiales: orderMaterials.length,
-        qrDisponible: !!qrImageUrl 
-    });
+    // Habilitar botones de acción
+    if (window.enableActionButtons) {
+        window.enableActionButtons();
+    }
+    
+    console.log('✅ Etiqueta generada con éxito');
+    
+    // Scroll suave a la vista previa
+    document.querySelector('.preview-section').scrollIntoView({ behavior: 'smooth' });
 }

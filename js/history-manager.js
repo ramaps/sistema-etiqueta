@@ -1,238 +1,142 @@
-// history-manager.js - VERSIÓN CORREGIDA
+// history-manager.js - VERSIÓN FINAL CORREGIDA
 
-// Referencias a elementos del historial
-const historyList = document.getElementById('historyList');
-const clearHistoryBtn = document.getElementById('clearHistoryBtn');
-const exportHistoryBtn = document.getElementById('exportHistoryBtn');
-const saveBtn = document.getElementById('saveBtn');
-
-// Inicializar al cargar el DOM
 document.addEventListener('DOMContentLoaded', function() {
     console.log('History manager inicializando...');
     
-    // Verificar que los elementos existen
-    if (!historyList || !saveBtn || !clearHistoryBtn || !exportHistoryBtn) {
-        console.error('❌ Faltan elementos del historial');
-        return;
+    // Cargar historial al iniciar
+    updateHistoryList();
+
+    const clearHistoryBtn = document.getElementById('clearHistoryBtn');
+    const saveBtn = document.getElementById('saveBtn');
+
+    if (clearHistoryBtn) {
+        clearHistoryBtn.addEventListener('click', function() {
+            if (confirm('¿Estás seguro de que deseas borrar todo el historial?')) {
+                localStorage.removeItem('labelHistory');
+                updateHistoryList();
+            }
+        });
     }
-    
-    console.log('✅ Elementos del historial encontrados');
-    
-    // Configurar eventos
-    saveBtn.addEventListener('click', saveToHistory);
-    clearHistoryBtn.addEventListener('click', clearHistory);
-    exportHistoryBtn.addEventListener('click', exportHistory);
-    
-    // Cargar historial desde localStorage
-    loadHistoryFromLocalStorage();
-    
-    console.log('✅ History manager inicializado correctamente');
+
+    if (saveBtn) {
+        saveBtn.addEventListener('click', saveToHistory);
+    }
 });
 
-// Guardar en historial
+// FUNCIÓN PARA GUARDAR EN EL HISTORIAL
 function saveToHistory() {
-    if (!currentLabelData) {
-        alert('Primero debe generar una etiqueta');
+    if (!window.currentLabelData) {
+        alert('❌ No hay datos para guardar. Primero genera una etiqueta.');
         return;
     }
+
+    let history = JSON.parse(localStorage.getItem('labelHistory') || '[]');
     
-    const ordenNumero = document.getElementById('previewOrdenNumero')?.textContent || 'N/A';
-    const cantidadTotal = document.getElementById('previewTotalValue')?.textContent || '0.0 BLS';
-    const materialsCount = orderMaterials.length;
-    const timestamp = new Date().toLocaleString('es-ES');
-    const verificationCode = currentLabelData?.verificationCode || 'N/A';
+    // Verificar si ya existe para actualizar o agregar nuevo
+    const existsIndex = history.findIndex(item => item.verificationCode === window.currentLabelData.verificationCode);
     
-    // CORRECCIÓN: Usar currentWebPageUrl en lugar de currentPdfDriveUrl
-    const hasDriveLink = currentWebPageUrl ? 'Sí' : 'No';
-    const destino = document.getElementById('previewDestino')?.textContent || 'N/A';
-    
-    const historyItem = document.createElement('div');
-    historyItem.className = 'history-item';
-    historyItem.innerHTML = `
-        <div class="history-info">
-            <div><strong>Orden:</strong> ${ordenNumero}</div>
-            <div><strong>Materiales:</strong> ${materialsCount} | <strong>Total Bolsas:</strong> ${cantidadTotal}</div>
-            <div><strong>Destino:</strong> ${destino}</div>
-            <div><strong>Código:</strong> ${verificationCode}</div>
-            <div><strong>Página Web:</strong> ${hasDriveLink}</div>
-            <div><small>Guardado: ${timestamp}</small></div>
-        </div>
-        <div class="history-actions">
-            <button class="btn btn-small" onclick="loadFromHistory(this)">
-                <i class="fas fa-redo"></i> Cargar
-            </button>
-            <button class="btn btn-small btn-secondary" onclick="removeFromHistory(this)">
-                <i class="fas fa-trash"></i>
-            </button>
-        </div>
-    `;
-    
-    if (historyList.querySelector('.empty-history')) {
-        historyList.innerHTML = '';
+    if (existsIndex !== -1) {
+        history[existsIndex] = { ...window.currentLabelData };
+    } else {
+        history.unshift({ ...window.currentLabelData });
     }
-    
-    historyList.prepend(historyItem);
-    
-    saveHistoryToLocalStorage();
-    
-    alert('Etiqueta guardada en el historial correctamente');
+
+    // Mantener solo los últimos 50 registros
+    if (history.length > 50) history.pop();
+
+    localStorage.setItem('labelHistory', JSON.stringify(history));
+    updateHistoryList();
+    alert('✅ Etiqueta guardada con éxito en el historial');
 }
 
-// Cargar desde historial
-window.loadFromHistory = function(button) {
-    const historyItem = button.closest('.history-item');
-    const historyInfo = historyItem.querySelector('.history-info');
-    
-    // Usar operador de encadenamiento opcional para evitar errores
-    const orden = historyInfo?.children[0]?.textContent?.replace('Orden:', '')?.trim() || 'N/A';
-    const destino = historyInfo?.children[2]?.textContent?.replace('Destino:', '')?.trim() || 'N/A';
-    const materialesText = historyInfo?.children[1]?.textContent || '';
-    const totalBolsas = materialesText.split('|')[1]?.replace('Total Bolsas:', '')?.trim() || '0.0 BLS';
-    const codigoVerificacion = historyInfo?.children[3]?.textContent?.replace('Código:', '')?.trim() || 'N/A';
-    const hasDriveLink = historyInfo?.children[4]?.textContent?.replace('Página Web:', '')?.trim() || 'No';
-    
-    let mensaje = `Orden "${orden}" cargada.\nTotal de bolsas: ${totalBolsas}\nCódigo: ${codigoVerificacion}`;
-    if (hasDriveLink === 'Sí') {
-        mensaje += '\n\nEsta etiqueta tiene una página web en Google Drive.';
-    }
-    
-    alert(mensaje);
-    
-    // Cambiar a la pestaña de creación
-    const tab1 = document.querySelector('[data-tab="tab-1"]');
-    if (tab1) tab1.click();
-};
+// FUNCIÓN CLAVE: CARGAR DATOS DEL HISTORIAL AL FORMULARIO
+window.loadFromHistory = function(verificationCode) {
+    const history = JSON.parse(localStorage.getItem('labelHistory') || '[]');
+    const data = history.find(item => item.verificationCode === verificationCode);
 
-// Eliminar del historial
-window.removeFromHistory = function(button) {
-    if (confirm('¿Está seguro de que desea eliminar esta etiqueta del historial?')) {
-        const historyItem = button.closest('.history-item');
-        if (historyItem) {
-            historyItem.remove();
+    if (!data) {
+        alert('❌ No se encontraron los datos de esta etiqueta.');
+        return;
+    }
+
+    if (confirm(`¿Deseas cargar la Orden #${data.ordenNumero} en el formulario?`)) {
+        // 1. Llenar campos de cabecera
+        document.getElementById('ordenNumero').value = data.ordenNumero;
+        document.getElementById('codigo').value = data.codigo;
+        document.getElementById('destino').value = data.destino;
+
+        // 2. Restaurar el array global de materiales (IMPORTANTE)
+        // Usamos JSON.parse/stringify para crear una copia limpia
+        window.orderMaterials = JSON.parse(JSON.stringify(data.materiales));
+
+        // 3. Actualizar la lista visual de materiales en el formulario
+        if (typeof window.updateMaterialsList === 'function') {
+            window.updateMaterialsList();
         }
-        
-        if (historyList.children.length === 0) {
-            historyList.innerHTML = '<div class="empty-history">No hay etiquetas en el historial. Genera una etiqueta para verla aquí.</div>';
+
+        // 4. Actualizar el contador de bolsas del formulario
+        if (typeof window.updateTotalBags === 'function') {
+            window.updateTotalBags();
         }
-        
-        saveHistoryToLocalStorage();
+
+        // 5. Generar la vista previa automáticamente para que se vea en la derecha
+        if (typeof window.generateLabel === 'function') {
+            window.generateLabel();
+        }
+
+        // 6. Cambiar automáticamente a la pestaña de "Crear Etiqueta"
+        const tabCrear = document.querySelector('[data-tab="tab-1"]');
+        if (tabCrear) {
+            tabCrear.click();
+        }
+
+        // 7. Subir al inicio de la página para ver los datos
+        window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 };
 
-// Limpiar historial
-function clearHistory() {
-    if (confirm('¿Está seguro de que desea eliminar todo el historial?')) {
-        historyList.innerHTML = '<div class="empty-history">No hay etiquetas en el historial. Genera una etiqueta para verla aquí.</div>';
-        localStorage.removeItem('labelHistory');
+// FUNCIÓN PARA ELIMINAR UN ITEM ESPECÍFICO DEL HISTORIAL
+window.removeFromHistory = function(verificationCode, event) {
+    if (event) event.stopPropagation(); // Evita que se dispare el loadFromHistory
+    
+    if (confirm('¿Eliminar esta etiqueta del historial?')) {
+        let history = JSON.parse(localStorage.getItem('labelHistory') || '[]');
+        history = history.filter(item => item.verificationCode !== verificationCode);
+        localStorage.setItem('labelHistory', JSON.stringify(history));
+        updateHistoryList();
     }
-}
+};
 
-// Exportar historial
-function exportHistory() {
-    const historyItems = historyList.querySelectorAll('.history-item');
-    if (historyItems.length === 0) {
-        alert('No hay datos en el historial para exportar');
+// FUNCIÓN PARA RENDERIZAR LA LISTA DEL HISTORIAL
+function updateHistoryList() {
+    const historyList = document.getElementById('historyList');
+    if (!historyList) return;
+
+    const history = JSON.parse(localStorage.getItem('labelHistory') || '[]');
+
+    if (history.length === 0) {
+        historyList.innerHTML = '<div class="empty-history">No hay etiquetas en el historial.</div>';
         return;
     }
-    
-    const data = [['Orden', 'Destino', 'Materiales', 'Total Bolsas', 'Código Verificación', 'Página Web', 'Fecha Guardado']];
-    
-    historyItems.forEach(item => {
-        const info = item.querySelector('.history-info');
-        const orden = info?.children[0]?.textContent?.replace('Orden:', '')?.trim() || 'N/A';
-        const destino = info?.children[2]?.textContent?.replace('Destino:', '')?.trim() || 'N/A';
-        const materialesText = info?.children[1]?.textContent || '';
-        const materiales = materialesText.split('|')[0]?.replace('Materiales:', '')?.trim() || '0';
-        const totalBolsas = materialesText.split('|')[1]?.replace('Total Bolsas:', '')?.trim() || '0.0';
-        const codigo = info?.children[3]?.textContent?.replace('Código:', '')?.trim() || 'N/A';
-        const driveLink = info?.children[4]?.textContent?.replace('Página Web:', '')?.trim() || 'No';
-        const fecha = info?.children[5]?.textContent?.replace('Guardado:', '')?.trim() || 'N/A';
-        
-        data.push([orden, destino, materiales, totalBolsas, codigo, driveLink, fecha]);
-    });
-    
-    let csvContent = "data:text/csv;charset=utf-8,";
-    data.forEach(row => {
-        csvContent += row.map(cell => `"${cell}"`).join(",") + "\r\n";
-    });
-    
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement("a");
-    link.setAttribute("href", encodedUri);
-    link.setAttribute("download", `historial_etiquetas_${new Date().toISOString().slice(0,10)}.csv`);
-    document.body.appendChild(link);
-    
-    link.click();
-    document.body.removeChild(link);
-}
 
-// Guardar historial en localStorage
-function saveHistoryToLocalStorage() {
-    const historyItems = historyList.querySelectorAll('.history-item');
-    const historyData = [];
-    
-    historyItems.forEach(item => {
-        const info = item.querySelector('.history-info');
-        const orden = info?.children[0]?.textContent?.replace('Orden:', '')?.trim() || 'N/A';
-        const destino = info?.children[2]?.textContent?.replace('Destino:', '')?.trim() || 'N/A';
-        const materialesText = info?.children[1]?.textContent || '';
-        const materiales = materialesText.split('|')[0]?.replace('Materiales:', '')?.trim() || '0';
-        const totalBolsas = materialesText.split('|')[1]?.replace('Total Bolsas:', '')?.trim() || '0.0';
-        const codigo = info?.children[3]?.textContent?.replace('Código:', '')?.trim() || 'N/A';
-        const driveLink = info?.children[4]?.textContent?.replace('Página Web:', '')?.trim() || 'No';
-        const fecha = info?.children[5]?.textContent?.replace('Guardado:', '')?.trim() || 'N/A';
-        
-        historyData.push({
-            orden, 
-            destino, 
-            materiales, 
-            totalBolsas, 
-            codigo, 
-            driveLink,
-            fecha
-        });
-    });
-    
-    localStorage.setItem('labelHistory', JSON.stringify(historyData));
-}
-
-// Cargar historial desde localStorage al iniciar
-function loadHistoryFromLocalStorage() {
-    const savedHistory = localStorage.getItem('labelHistory');
-    if (savedHistory) {
-        try {
-            const historyData = JSON.parse(savedHistory);
-            
-            if (historyData.length > 0) {
-                historyList.innerHTML = '';
-                
-                historyData.forEach(item => {
-                    const historyItem = document.createElement('div');
-                    historyItem.className = 'history-item';
-                    historyItem.innerHTML = `
-                        <div class="history-info">
-                            <div><strong>Orden:</strong> ${item.orden}</div>
-                            <div><strong>Materiales:</strong> ${item.materiales} | <strong>Total Bolsas:</strong> ${item.totalBolsas}</div>
-                            <div><strong>Destino:</strong> ${item.destino}</div>
-                            <div><strong>Código:</strong> ${item.codigo}</div>
-                            <div><strong>Página Web:</strong> ${item.driveLink}</div>
-                            <div><small>Guardado: ${item.fecha}</small></div>
-                        </div>
-                        <div class="history-actions">
-                            <button class="btn btn-small" onclick="loadFromHistory(this)">
-                                <i class="fas fa-redo"></i> Cargar
-                            </button>
-                            <button class="btn btn-small btn-secondary" onclick="removeFromHistory(this)">
-                                <i class="fas fa-trash"></i>
-                            </button>
-                        </div>
-                    `;
-                    historyList.appendChild(historyItem);
-                });
-            }
-        } catch (error) {
-            console.error('❌ Error cargando historial:', error);
-            localStorage.removeItem('labelHistory');
-        }
-    }
+    historyList.innerHTML = history.map(item => `
+        <div class="history-item" onclick="loadFromHistory('${item.verificationCode}')" 
+             style="cursor:pointer; background:white; border:1px solid #ddd; padding:15px; margin-bottom:10px; border-radius:8px; display:flex; justify-content:space-between; align-items:center; transition: transform 0.2s;">
+            <div class="history-info">
+                <div style="font-weight:bold; color:#2c3e50; font-size:1.1rem;"># ${item.ordenNumero} - ${item.destino}</div>
+                <div style="font-size:0.9rem; color:#666; margin-top:4px;">
+                    <i class="fas fa-box"></i> ${item.materiales.length} productos | 
+                    <i class="fas fa-barcode"></i> Pedido: ${item.codigo}
+                </div>
+                <div style="font-size:0.8rem; color:#999; margin-top:4px;">ID: ${item.verificationCode}</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:1.4rem; font-weight:bold; color:#000;">${parseFloat(item.cantidadTotal).toFixed(1)} <small style="font-size:0.8rem;">BLS</small></div>
+                <button class="btn btn-secondary" onclick="removeFromHistory('${item.verificationCode}', event)" 
+                        style="padding:4px 8px; font-size:12px; margin-top:5px; background:#e74c3c; color:white; border:none; border-radius:4px;">
+                    <i class="fas fa-trash"></i>
+                </button>
+            </div>
+        </div>
+    `).join('');
 }
