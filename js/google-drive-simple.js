@@ -55,14 +55,7 @@ async function createWebPage() {
 
 /**
  * Genera ÚNICAMENTE las filas de materiales para insertar en la tabla de la API
- */
-/**
- * Genera ÚNICAMENTE las filas de materiales para insertar en la tabla de la API
- * Se eliminó el color naranja/rojo del solicitante para un look más sobrio.
- */
-/**
- * Genera ÚNICAMENTE las filas de materiales con el orden solicitado:
- * SKU -> DESCRIPCIÓN -> LOTE -> SOLICITANTE -> BANDERA
+ * Se eliminó la sección de BANDERA para simplificar la visualización.
  */
 function generateWebPageRowsHTML() {
     const data = window.currentLabelData;
@@ -86,10 +79,6 @@ function generateWebPageRowsHTML() {
                 
                 <div style="font-size: 0.85rem; color: #555; font-weight: bold; margin-top: 4px;">
                     SOL.: ${item.solicitante || '---'}
-                </div>
-                
-                <div style="font-size: 0.85rem; color: #555; font-weight: bold;">
-                    BANDERA - ${item.bandera || '---'}
                 </div>
             </td>
             
