@@ -28,41 +28,49 @@ function abrirVentanaImpresion(tipo) {
         color-adjust: exact !important;
     `;
 
-    const styles = esTermica ? `
-        @page { size: 100mm 150mm; margin: 0; }
-        body { width: 100mm; padding: 6mm; font-family: 'Helvetica', Arial, sans-serif; color: #000; line-height: 1.2; }
-        
-        .header-container { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #000; padding-bottom: 12px; margin-bottom: 15px; }
-        .header-qr { width: 26mm; height: 26mm; flex-shrink: 0; }
-        .info-header { text-align: right; text-transform: uppercase; margin-left: 10px; }
-        .label-xs { font-size: 10px; color: #666; font-weight: bold; }
-        .val-orden { font-size: 17px; font-weight: bold; margin-bottom: 4px; }
-        .val-pedido { font-size: 28px; font-weight: 900; line-height: 1; }
+    // En la línea donde defines el tamaño de página térmica (actualmente línea ~20):
+// Cambia de: @page { size: 100mm 150mm; margin: 0; }
+// A: @page { size: 100mm 190mm; margin: 0; }
 
-        .destino-box { background: #f2f2f2; padding: 10px; border-left: 6px solid #000; margin-bottom: 15px; ${printForceStyle} }
-        .destino-box .val { font-size: 20px; font-weight: bold; text-transform: uppercase; }
+// También puedes ajustar el padding del body si es necesario:
+// body { width: 100mm; padding: 6mm; ... }
 
-        .item-row { border-bottom: 1px solid #ccc; padding: 10px 0; }
-        .desc-main { font-size: 14px; font-weight: bold; display: block; text-transform: uppercase; }
-        
-        /* AJUSTE TÉRMICA: SKU Y SOLICITANTE UN POCO MÁS GRANDES */
-        .desc-sub { font-size: 12px; color: #333; font-family: monospace; font-weight: bold; }
+// VERSIÓN CORREGIDA:
+const styles = esTermica ? `
+    @page { size: 100mm 190mm; margin: 0; }
+    body { width: 100mm; padding: 6mm; font-family: 'Helvetica', Arial, sans-serif; color: #000; line-height: 1.2; }
+    
+    .header-container { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #000; padding-bottom: 12px; margin-bottom: 15px; }
+    .header-qr { width: 30mm; height: 30mm; flex-shrink: 0; }
+    .info-header { text-align: right; text-transform: uppercase; margin-left: 10px; }
+    .label-xs { font-size: 10px; color: #666; font-weight: bold; }
+    .val-orden { font-size: 17px; font-weight: bold; margin-bottom: 4px; }
+    .val-pedido { font-size: 28px; font-weight: 900; line-height: 1; }
 
-        .cant-val { font-size: 20px; font-weight: bold; text-align: right; vertical-align: middle; }
+    .destino-box { background: #f2f2f2; padding: 10px; border-left: 6px solid #000; margin-bottom: 15px; ${printForceStyle} }
+    .destino-box .val { font-size: 20px; font-weight: bold; text-transform: uppercase; }
 
-        .total-container { page-break-inside: avoid; margin-top: 15px; }
-        .total-card { 
-            background: #000 !important; 
-            color: #fff !important; 
-            padding: 15px; 
-            text-align: center; 
-            ${printForceStyle}
-        }
-        .total-num { font-size: 32px; font-weight: bold; display: block; }
+    .item-row { border-bottom: 1px solid #ccc; padding: 10px 0; }
+    .desc-main { font-size: 15px; font-weight: bold; display: block; text-transform: uppercase; }
+    
+    /* AJUSTE TÉRMICA: SKU Y SOLICITANTE UN POCO MÁS GRANDES */
+    .desc-sub { font-size: 12px; color: #333; font-family: monospace; font-weight: bold; }
 
-        .footer { text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee; page-break-inside: avoid; }
-        .brand-name { font-size: 13px; font-weight: 900; }
-        .brand-id { font-size: 10px; color: #888; font-family: monospace; }
+    .cant-val { font-size: 20px; font-weight: bold; text-align: right; vertical-align: middle; }
+
+    .total-container { page-break-inside: avoid; margin-top: 15px; }
+    .total-card { 
+        background: #000 !important; 
+        color: #fff !important; 
+        padding: 15px; 
+        text-align: center; 
+        ${printForceStyle}
+    }
+    .total-num { font-size: 32px; font-weight: bold; display: block; }
+
+    .footer { text-align: center; margin-top: 20px; padding-top: 10px; border-top: 1px solid #eee; page-break-inside: avoid; }
+    .brand-name { font-size: 13px; font-weight: 900; }
+    .brand-id { font-size: 10px; color: #888; font-family: monospace; }
     ` : `
         @page { size: A4; margin: 10mm 15mm; }
         body { font-family: 'Helvetica', Arial, sans-serif; color: #333; line-height: 1.4; }

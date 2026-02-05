@@ -1,3 +1,5 @@
+// form-handler.js - VERSIÓN CORREGIDA CON FORZADO DE MAYÚSCULAS
+
 // REFERENCIAS A ELEMENTOS DEL DOM
 const orderForm = document.getElementById('orderForm');
 const skuInput = document.getElementById('sku');
@@ -15,18 +17,8 @@ document.addEventListener('DOMContentLoaded', function() {
     console.log('Form handler inicializando...');
     
     // Verificar que todos los elementos existen
-    if (!orderForm) {
-        console.error('No se encontró el formulario orderForm');
-        return;
-    }
-    
-    if (!addMaterialBtn) {
-        console.error('No se encontró el botón addMaterialBtn');
-        return;
-    }
-    
-    if (!clearOrderBtn) {
-        console.error('No se encontró el botón clearOrderBtn');
+    if (!orderForm || !addMaterialBtn || !clearOrderBtn) {
+        console.error('Faltan elementos críticos en el DOM para form-handler.js');
         return;
     }
     
@@ -41,36 +33,39 @@ document.addEventListener('DOMContentLoaded', function() {
 function addMaterial() {
     console.log('Intentando agregar material...');
     
-    const sku = skuInput ? skuInput.value.trim() : '';
-    const descripcion = descripcionInput ? descripcionInput.value.trim() : '';
-    const lote = loteInput ? loteInput.value.trim() : '';
+    // CAPTURA DE DATOS Y CONVERSIÓN A MAYÚSCULAS
+    const sku = skuInput ? skuInput.value.trim().toUpperCase() : '';
+    const descripcion = descripcionInput ? descripcionInput.value.trim().toUpperCase() : '';
+    const lote = loteInput ? loteInput.value.trim().toUpperCase() : '';
     const cantidad = cantidadInput ? parseFloat(cantidadInput.value) : 0;
-    const solicitante = solicitanteInput ? solicitanteInput.value.trim() : '';
-    const bandera = banderaInput ? banderaInput.value.trim() : '';
+    const solicitante = solicitanteInput ? solicitanteInput.value.trim().toUpperCase() : '';
+    const bandera = banderaInput ? banderaInput.value.trim().toUpperCase() : '';
     
-    console.log('Datos del material:', { sku, descripcion, lote, cantidad, solicitante, bandera });
+    console.log('Datos del material procesados:', { sku, descripcion, lote, cantidad, solicitante });
     
-    // Validar
+    // Validar (Nota: quitamos bandera de la validación obligatoria por si es opcional)
     if (!sku || !descripcion || !lote || isNaN(cantidad) || cantidad <= 0 || !solicitante) {
-        alert('Por favor complete todos los campos del material con valores válidos');
+        alert('❌ Por favor complete todos los campos del material con valores válidos');
         return;
     }
     
     const materialId = Date.now() + Math.random();
+    
+    // Guardar en el array global (siempre en Mayúsculas)
     orderMaterials.push({
         id: materialId,
-        sku,
-        descripcion,
-        lote,
-        cantidad,
-        solicitante,
-        bandera
+        sku: sku,
+        descripcion: descripcion,
+        lote: lote,
+        cantidad: cantidad,
+        solicitante: solicitante,
+        bandera: bandera
     });
     
     updateMaterialsList();
     updateTotalBags();
     
-    // Limpiar formulario
+    // Limpiar campos de entrada de material
     if (skuInput) skuInput.value = '';
     if (descripcionInput) descripcionInput.value = '';
     if (loteInput) loteInput.value = '';
@@ -97,18 +92,20 @@ function updateMaterialsList() {
     orderMaterials.forEach(item => {
         const materialItem = document.createElement('div');
         materialItem.className = 'material-item';
+        // Mostramos todo en Mayúsculas en la lista visual también
         materialItem.innerHTML = `
             <div class="material-info">
-                <div><strong>SKU:</strong> ${item.sku}</div>
-                <div><strong>Lote:</strong> ${item.lote}</div>
-                <div><strong>Cantidad:</strong> ${item.cantidad} BLS</div>
-                <div><strong>Solicitante:</strong> ${item.solicitante}</div>
+                <div style="text-transform: uppercase;"><strong>SKU:</strong> ${item.sku}</div>
+                <div style="text-transform: uppercase;"><strong>DESC:</strong> ${item.descripcion}</div>
+                <div style="text-transform: uppercase;"><strong>LOTE:</strong> ${item.lote}</div>
+                <div><strong>CANTIDAD:</strong> ${item.cantidad} BLS</div>
+                <div style="text-transform: uppercase;"><strong>SOLICITANTE:</strong> ${item.solicitante}</div>
             </div>
             <div class="material-actions">
-                <button class="btn btn-small btn-secondary" onclick="editMaterial(${item.id})">
+                <button class="btn btn-small btn-secondary" onclick="editMaterial(${item.id})" title="Editar">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button class="btn btn-small btn-secondary" onclick="removeMaterial(${item.id})">
+                <button class="btn btn-small btn-secondary" onclick="removeMaterial(${item.id})" title="Eliminar" style="background: #e74c3c; color: white; border: none;">
                     <i class="fas fa-trash"></i>
                 </button>
             </div>
@@ -139,6 +136,7 @@ window.editMaterial = function(materialId) {
     if (materialIndex !== -1) {
         const material = orderMaterials[materialIndex];
         
+        // Cargar datos de vuelta al formulario
         if (skuInput) skuInput.value = material.sku;
         if (descripcionInput) descripcionInput.value = material.descripcion;
         if (loteInput) loteInput.value = material.lote;
@@ -146,6 +144,7 @@ window.editMaterial = function(materialId) {
         if (solicitanteInput) solicitanteInput.value = material.solicitante;
         if (banderaInput) banderaInput.value = material.bandera || '';
         
+        // Eliminar del array actual (se volverá a agregar al dar clic en "Agregar")
         orderMaterials.splice(materialIndex, 1);
         
         updateMaterialsList();
@@ -167,12 +166,11 @@ window.removeMaterial = function(materialId) {
     }
 };
 
-// MANEJADOR PARA LIMPIAR FORMULARIO
+// MANEJADOR PARA LIMPIAR FORMULARIO COMPLETO
 function clearFormHandler() {
     if (orderMaterials.length > 0 && !confirm('¿Está seguro de que desea limpiar toda la orden? Se perderán todos los materiales agregados.')) {
         return;
     }
-    
     clearForm();
 }
 
@@ -186,12 +184,11 @@ function clearForm() {
         orderForm.reset();
     }
     
-    // Deshabilitar botones
+    // Deshabilitar botones de acción hasta que se genere una nueva etiqueta
     const actionButtons = [
         'printSingleBtn',
         'printThermalBtn', 
-        'generatePdfBtn',
-        'uploadToDriveBtn',
+        'createWebPageBtn',
         'saveBtn'
     ];
     
@@ -200,5 +197,5 @@ function clearForm() {
         if (btn) btn.disabled = true;
     });
     
-    console.log('Formulario limpiado');
+    console.log('Formulario y lista de materiales vaciados');
 }

@@ -1,13 +1,13 @@
-// history-manager.js - VERSIÓN FINAL CORREGIDA
+// history-manager.js - VERSIÓN CON EXPORTACIÓN A EXCEL
 
 document.addEventListener('DOMContentLoaded', function() {
     console.log('History manager inicializando...');
     
-    // Cargar historial al iniciar
     updateHistoryList();
 
     const clearHistoryBtn = document.getElementById('clearHistoryBtn');
     const saveBtn = document.getElementById('saveBtn');
+    const exportBtn = document.getElementById('exportHistoryBtn'); // Asegúrate de tener este ID en tu HTML
 
     if (clearHistoryBtn) {
         clearHistoryBtn.addEventListener('click', function() {
@@ -21,7 +21,62 @@ document.addEventListener('DOMContentLoaded', function() {
     if (saveBtn) {
         saveBtn.addEventListener('click', saveToHistory);
     }
+
+    if (exportBtn) {
+        exportBtn.addEventListener('click', exportToExcel);
+    }
 });
+
+// --- FUNCIÓN PARA EXPORTAR A EXCEL (CSV FORMAT) ---
+function exportToExcel() {
+    const history = JSON.parse(localStorage.getItem('labelHistory') || '[]');
+    
+    if (history.length === 0) {
+        alert('❌ No hay datos en el historial para exportar.');
+        return;
+    }
+
+    // Definir encabezados
+    const headers = ['Solicitante', 'SKU', 'Descripcion', 'Lote', 'Cantidad', 'Orden', 'N° de Pedido', 'Destino', 'ID Verificacion'];
+    
+    // Construir las filas (Aplanando los materiales)
+    const rows = [];
+    history.forEach(order => {
+        order.materiales.forEach(mat => {
+            rows.push([
+                `"${mat.solicitante || ''}"`,
+                `"${mat.sku || ''}"`,
+                `"${mat.descripcion || ''}"`,
+                `"${mat.lote || ''}"`,
+                parseFloat(mat.cantidad).toFixed(1),
+                `"${order.ordenNumero}"`,
+                `"${order.codigo}"`,
+                `"${order.destino}"`,
+                `"${order.verificationCode}"`
+            ]);
+        });
+    });
+
+    // Unir encabezados y filas con punto y coma (formato regional Excel común)
+    const csvContent = [
+        headers.join(';'),
+        ...rows.map(row => row.join(';'))
+    ].join('\n');
+
+    // Crear el archivo y descargarlo con BOM para caracteres especiales (tildes/ñ)
+    const blob = new Blob(['\ufeff' + csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    
+    const fecha = new Date().toISOString().slice(0, 10);
+    link.setAttribute('href', url);
+    link.setAttribute('download', `Historial_Etiquetas_${fecha}.csv`);
+    link.style.visibility = 'hidden';
+    
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+}
 
 // FUNCIÓN PARA GUARDAR EN EL HISTORIAL
 function saveToHistory() {
@@ -31,8 +86,6 @@ function saveToHistory() {
     }
 
     let history = JSON.parse(localStorage.getItem('labelHistory') || '[]');
-    
-    // Verificar si ya existe para actualizar o agregar nuevo
     const existsIndex = history.findIndex(item => item.verificationCode === window.currentLabelData.verificationCode);
     
     if (existsIndex !== -1) {
@@ -41,7 +94,6 @@ function saveToHistory() {
         history.unshift({ ...window.currentLabelData });
     }
 
-    // Mantener solo los últimos 50 registros
     if (history.length > 50) history.pop();
 
     localStorage.setItem('labelHistory', JSON.stringify(history));
@@ -49,7 +101,7 @@ function saveToHistory() {
     alert('✅ Etiqueta guardada con éxito en el historial');
 }
 
-// FUNCIÓN CLAVE: CARGAR DATOS DEL HISTORIAL AL FORMULARIO
+// FUNCIÓN PARA CARGAR DATOS DEL HISTORIAL AL FORMULARIO
 window.loadFromHistory = function(verificationCode) {
     const history = JSON.parse(localStorage.getItem('labelHistory') || '[]');
     const data = history.find(item => item.verificationCode === verificationCode);
@@ -60,44 +112,25 @@ window.loadFromHistory = function(verificationCode) {
     }
 
     if (confirm(`¿Deseas cargar la Orden #${data.ordenNumero} en el formulario?`)) {
-        // 1. Llenar campos de cabecera
         document.getElementById('ordenNumero').value = data.ordenNumero;
         document.getElementById('codigo').value = data.codigo;
         document.getElementById('destino').value = data.destino;
 
-        // 2. Restaurar el array global de materiales (IMPORTANTE)
-        // Usamos JSON.parse/stringify para crear una copia limpia
         window.orderMaterials = JSON.parse(JSON.stringify(data.materiales));
 
-        // 3. Actualizar la lista visual de materiales en el formulario
-        if (typeof window.updateMaterialsList === 'function') {
-            window.updateMaterialsList();
-        }
+        if (typeof window.updateMaterialsList === 'function') window.updateMaterialsList();
+        if (typeof window.updateTotalBags === 'function') window.updateTotalBags();
+        if (typeof window.generateLabel === 'function') window.generateLabel();
 
-        // 4. Actualizar el contador de bolsas del formulario
-        if (typeof window.updateTotalBags === 'function') {
-            window.updateTotalBags();
-        }
-
-        // 5. Generar la vista previa automáticamente para que se vea en la derecha
-        if (typeof window.generateLabel === 'function') {
-            window.generateLabel();
-        }
-
-        // 6. Cambiar automáticamente a la pestaña de "Crear Etiqueta"
         const tabCrear = document.querySelector('[data-tab="tab-1"]');
-        if (tabCrear) {
-            tabCrear.click();
-        }
+        if (tabCrear) tabCrear.click();
 
-        // 7. Subir al inicio de la página para ver los datos
         window.scrollTo({ top: 0, behavior: 'smooth' });
     }
 };
 
-// FUNCIÓN PARA ELIMINAR UN ITEM ESPECÍFICO DEL HISTORIAL
 window.removeFromHistory = function(verificationCode, event) {
-    if (event) event.stopPropagation(); // Evita que se dispare el loadFromHistory
+    if (event) event.stopPropagation();
     
     if (confirm('¿Eliminar esta etiqueta del historial?')) {
         let history = JSON.parse(localStorage.getItem('labelHistory') || '[]');
@@ -107,7 +140,6 @@ window.removeFromHistory = function(verificationCode, event) {
     }
 };
 
-// FUNCIÓN PARA RENDERIZAR LA LISTA DEL HISTORIAL
 function updateHistoryList() {
     const historyList = document.getElementById('historyList');
     if (!historyList) return;
