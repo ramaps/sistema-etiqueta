@@ -41,7 +41,7 @@ const styles = esTermica ? `
     body { width: 100mm; padding: 6mm; font-family: 'Helvetica', Arial, sans-serif; color: #000; line-height: 1.2; }
     
     .header-container { display: flex; justify-content: space-between; align-items: center; border-bottom: 3px solid #000; padding-bottom: 12px; margin-bottom: 15px; }
-    .header-qr { width: 30mm; height: 30mm; flex-shrink: 0; }
+    .header-qr { width: 35mm; height: 35mm; flex-shrink: 0; }
     .info-header { text-align: right; text-transform: uppercase; margin-left: 10px; }
     .label-xs { font-size: 10px; color: #666; font-weight: bold; }
     .val-orden { font-size: 17px; font-weight: bold; margin-bottom: 4px; }
